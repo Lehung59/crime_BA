@@ -77,7 +77,6 @@ Predictive_Guardians-main/
 ```powershell
 .\venv311\Scripts\activate
 pip install -r requirements.txt
-pip install joblib branca
 ```
 
 **Danh sách dependencies chính:**
@@ -114,3 +113,192 @@ python -m streamlit run app.py
 > **Lưu ý:** Lần đầu chuyển sang tab "Predictive Modeling", H2O sẽ khởi tạo JVM (~15-30 giây). Các lần sau sẽ nhanh hơn do đã cache.
 
 ---
+
+## Luồng hoạt động của code
+
+```
+app.py (Entry Point)
+  │
+  ├── Sidebar Menu (option_menu) ──→ selected = "Home" / "Crime Pattern..." / ...
+  │
+  ├── if/elif routing:
+  │     │
+  │     ├── "Home"
+  │     │     └── Hiển thị trang giới thiệu (HTML tĩnh trong app.py)
+  │     │
+  │     ├── "Crime Pattern Analysis"
+  │     │     ├── load_crime_pattern_data()  ←  @st.cache_data
+  │     │     │     ├── Tải GeoJSON (GitHub raw URL)
+  │     │     │     └── Đọc Crime_Pattern_Analysis_Cleaned.csv
+  │     │     ├── temporal_analysis()   →  Biểu đồ bar theo Năm/Tháng/Ngày
+  │     │     ├── chloropleth_maps()    →  Bản đồ Choropleth (Plotly Mapbox)
+  │     │     └── crime_hotspots()      →  Heatmap + DBSCAN markers (Folium)
+  │     │
+  │     ├── "Criminal Profiling"
+  │     │     └── create_criminal_profiling_dashboard()
+  │     │           ├── Đọc Criminal_Profiling_cleaned.csv
+  │     │           ├── Section 1-5: Phân tích đơn biến (Age, Gender, Caste, Occupation, Crime)
+  │     │           └── Section 6a-6d: Phân tích tương quan (Heatmap, Treemap, Sunburst, Stacked Bar)
+  │     │
+  │     ├── "Predictive Modeling"
+  │     │     └── predictive_modeling_recidivism()
+  │     │           ├── init_h2o()              ←  @st.cache_resource (chỉ chạy 1 lần)
+  │     │           ├── load_model_recidivism()  ←  @st.cache_resource
+  │     │           ├── User nhập: Age, Caste, Profession, District, City
+  │     │           ├── Frequency encoding  →  scaler.transform()  →  H2OFrame
+  │     │           └── model.predict()  →  Kết quả: tái phạm / không tái phạm
+  │     │
+  │     └── "Police Resource Allocation"
+  │           └── resource_allocation(df)
+  │                 ├── User chọn District → lọc Beat/Village
+  │                 ├── Cấu hình: Default/Custom sanctioned strength (ASI, CHC, CPC)
+  │                 └── optimise_resource_allocation()
+  │                       ├── PuLP LpProblem("Maximize")
+  │                       ├── Objective: max Σ(severity × officers)
+  │                       ├── Constraints: tổng ≤ quân số, mỗi beat ≥ 1
+  │                       └── Output: bảng phân bổ ASI/CHC/CPC theo từng beat
+```
+
+---
+
+## Chi tiết từng module
+
+### 1. Crime Pattern Analysis (`Crime_Pattern_Analysis.py`)
+
+**Input:** `Crime_Pattern_Analysis_Cleaned.csv` (chứa Year, Month, Day, District_Name, CrimeGroup_Name, Latitude, Longitude, FIRNo, VICTIM COUNT, Accused Count)
+
+**Xử lý:**
+- **Temporal Analysis:** Group by thời gian → bar chart Plotly (người dùng chọn filter quận + loại tội)
+- **Choropleth:** Aggregate theo District → hiển thị trên bản đồ Mapbox sử dụng GeoJSON Karnataka
+- **Hotspot:** Aggregate theo tọa độ → Folium HeatMap + DBSCAN(eps=0.1, min_samples=5) để tìm crime clusters
+
+**Output:** Biểu đồ tương tác + bản đồ
+
+---
+
+### 2. Criminal Profiling (`Criminal_Profiling.py`)
+
+**Input:** `Criminal_Profiling_cleaned.csv` (chứa Occupation, Crime_Group1, Crime_Head2, age, Caste, Sex)
+
+**Xử lý:** Tính toán thống kê mô tả cho từng biến, tạo biểu đồ Plotly với insight tự động.
+
+**Các biểu đồ:**
+| Biểu đồ | Kỹ thuật |
+|----------|----------|
+| Age Distribution | Histogram + Mean/Median lines |
+| Gender Analysis | Bar chart (log scale) |
+| Caste Analysis | Top 10 bar chart |
+| Occupation Analysis | Horizontal bar chart |
+| Crime Categories | Grouped tabs (Category + Sub-category) |
+| Age × Crime Heatmap | `pd.crosstab` → `go.Heatmap` |
+| Caste × Crime Treemap | `px.treemap` |
+| Gender-Age-Crime Sunburst | `px.sunburst` (3 levels) |
+| Occupation × Crime Stacked Bar | `pd.crosstab` → stacked `go.Bar` |
+
+---
+
+### 3. Predictive Modeling (`Predictive_modeling.py`)
+
+**Input:** User nhập 5 trường: Age, Caste, Profession, District, City
+
+**Xử lý:**
+1. `h2o.init()` — Khởi tạo JVM (cached, chỉ chạy 1 lần)
+2. Load MOJO model: `StackedEnsemble_BestOfFamily_2_AutoML_1_20240719_183320.zip`
+3. Frequency encoding: Chuyển categorical → numeric dùng `frequency_encoding.json`
+4. StandardScaler: Chuẩn hóa features dùng `scaler.pkl`
+5. Chuyển sang `H2OFrame` → `model.predict()`
+
+**Output:** Binary classification — "Likely to repeat" hoặc "Not likely to repeat"
+
+**Model:** H2O StackedEnsemble (AutoML), được huấn luyện offline bằng `pipelines/training_pipeline.py`
+
+---
+
+### 4. Police Resource Allocation (`Resource_Allocation.py`)
+
+**Input:** `Resource_Allocation_Cleaned.csv` (chứa District_Name, UnitName, Beat, Village_Area_Name, Normalised Crime Severity, ASI_Sanctioned, CHC_Sanctioned, CPC_Sanctioned)
+
+**Xử lý:**
+1. User chọn District → lọc danh sách Beat/Village
+2. Chọn Default hoặc Custom sanctioned strength
+3. Gọi `optimise_resource_allocation()`:
+   - Thư viện: **PuLP** (Linear Programming)
+   - Biến quyết định: `ASI[i]`, `CHC[i]`, `CPC[i]` cho mỗi beat (integer ≥ 0)
+   - Hàm mục tiêu: `Maximize Σ (crime_severity[i] × (ASI[i] + CHC[i] + CPC[i]))`
+   - Ràng buộc:
+     - `Σ ASI[i] ≤ ASI_Sanctioned` (tương tự cho CHC, CPC)
+     - `ASI[i] + CHC[i] + CPC[i] ≥ 1` (mỗi beat ít nhất 1 người)
+     - `ASI[i] ≤ severity[i] × ASI_Sanctioned` (giới hạn theo tỷ lệ severity)
+
+**Output:** Bảng DataFrame hiển thị số ASI/CHC/CPC được phân bổ cho mỗi Beat
+
+---
+
+## Dữ liệu đầu vào
+
+Tất cả dữ liệu nằm trong `Component_datasets/`. Đây là dữ liệu **đã được làm sạch** — quá trình cleaning nằm trong các notebook ở thư mục gốc của từng component (`Crime_Pattern_Analysis/`, `Criminal_Profiling/`, v.v.).
+
+| File | Kích thước | Số cột chính |
+|------|-----------|-------------|
+| `Crime_Pattern_Analysis_Cleaned.csv` | 66 MB | Year, Month, Day, District_Name, CrimeGroup_Name, Lat, Lon, FIRNo, VICTIM COUNT, Accused Count |
+| `Criminal_Profiling_cleaned.csv` | 3.5 MB | Occupation, Crime_Group1, Crime_Head2, age, Caste, Sex |
+| `Recidivism_cleaned_data.csv` | 49 MB | District_Name, age, Caste, Profession, PresentCity |
+| `Resource_Allocation_Cleaned.csv` | 1.9 MB | District_Name, UnitName, Beat, Village_Area_Name, Normalised Crime Severity, ASI/CHC/CPC Sanctioned |
+
+---
+
+## Models đã huấn luyện
+
+Nằm trong `models/Recidivism_model/`:
+
+| File | Mô tả |
+|------|--------|
+| `StackedEnsemble_*.zip` | H2O MOJO model — StackedEnsemble (kết hợp GBM + Deep Learning) |
+| `frequency_encoding.json` | Mapping value → frequency cho Caste, Profession, District_Name, PresentCity |
+| `scaler.pkl` | Scikit-learn StandardScaler đã fit trên training data |
+| `h2o-genmodel.jar` | H2O Java runtime (cần thiết để load MOJO) |
+
+Để huấn luyện lại model: `python pipelines/training_pipeline.py`
+
+---
+
+## Xử lý sự cố
+
+### Lỗi "Application Control Policy" / Pillow DLL bị block
+
+**Nguyên nhân:** Windows Security chặn DLL của Pillow trên Python 3.13.
+
+**Giải pháp:** Sử dụng Python 3.11 (đã tạo trong `venv311`).
+
+---
+
+### Lỗi "H2O init" bị treo / Java not found
+
+**Nguyên nhân:** Chưa cài Java hoặc `JAVA_HOME` chưa được set.
+
+**Giải pháp:**
+```powershell
+# Kiểm tra Java
+java -version
+
+# Nếu chưa có, cài JDK 8+ từ https://adoptium.net/
+```
+
+---
+
+### Lỗi khi chuyển tab (nội dung cũ hiển thị)
+
+**Nguyên nhân:** Streamlit re-run script, H2O load chậm.
+
+**Đã xử lý:** Custom CSS ẩn stale content + loading overlay. Nếu vẫn gặp, nhấn F5 để refresh hoàn toàn.
+
+---
+
+### Ứng dụng chạy chậm lần đầu
+
+**Bình thường.** Lần đầu cần:
+- Tải GeoJSON từ GitHub (~1-2 giây)
+- Khởi tạo H2O JVM (~15-30 giây)
+- Load CSV lớn (~2-5 giây)
+
+Các lần sau sẽ nhanh hơn nhờ `@st.cache_data` và `@st.cache_resource`.
