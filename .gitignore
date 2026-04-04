@@ -1,0 +1,9 @@
+venv/
+venv311/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+datasets/
+issue/
+models/Recidivism_model/StackEnsemble_*.zip
