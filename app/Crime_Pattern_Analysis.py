@@ -1,19 +1,12 @@
 import streamlit as st
-from streamlit_option_menu import option_menu
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from statsmodels.tsa.seasonal import seasonal_decompose
 import folium
-from folium import plugins
+from folium.plugins import HeatMap
 from sklearn.cluster import DBSCAN
 import numpy as np
-import requests
-import plotly.io as pio
-import streamlit.components.v1 as components
 from streamlit_folium import folium_static
-import pickle
-from folium.plugins import HeatMap
 from datetime import datetime
 import branca.colormap as cm
 

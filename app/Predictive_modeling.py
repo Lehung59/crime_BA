@@ -1,34 +1,10 @@
 import streamlit as st
-from streamlit_option_menu import option_menu
 import pandas as pd
-import plotly.express as px
-from statsmodels.tsa.seasonal import seasonal_decompose
-import folium
-from folium import plugins
-from sklearn.cluster import DBSCAN
 import numpy as np
-import requests
-import plotly.io as pio
-import streamlit.components.v1 as components
-import matplotlib.pyplot as plt
-import seaborn as sns
-from streamlit_folium import folium_static
-import pickle
 import h2o
-from h2o.automl import H2OAutoML
-import pandas as pd
-import folium
-from folium.plugins import HeatMap, Fullscreen
-from sklearn.cluster import DBSCAN
-from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import calinski_harabasz_score
 import os
 import joblib
 import json
-
-
-
 
 # Determine the root directory of the project
 root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -53,28 +29,9 @@ def load_model_recidivism():
     saved_model = h2o.import_mojo(model_file_path)
     return saved_model
 
-# @st.cache_data
-# def load_data_crime_type():
-#     data_file_path = os.path.join(root_dir, 'Component_datasets', 'Crime_Type_cleaned_data.csv')
-#     return pd.read_csv(data_file_path)
-
-
-
-# Load the model
-@st.cache_resource
-def load_model_crime_type():
-    model_file_path = os.path.join(root_dir, 'models', 'Crime_Type_Prediction', 'GBM_1_AutoML_2_20240521_83242.zip')
-    saved_model = h2o.import_mojo(model_file_path)
-    return saved_model
 
 def get_unique_values(data, feature):
     return data[feature].unique().tolist()
-
-def get_unique_values_crime_type(data, feature):
-    return data[feature].unique().tolist()
-
-
-
 
 
 def predictive_modeling_recidivism():
@@ -114,8 +71,8 @@ def predictive_modeling_recidivism():
 
     # Perform Encoding
     frequency_path = os.path.join(project_root, 'models', 'Recidivism_model', 'frequency_encoding.json')
-    f = open(frequency_path)
-    frequency = json.load(f)
+    with open(frequency_path) as f:
+        frequency = json.load(f)
     caste = frequency["Caste"][caste]
     profession = frequency["Profession"][profession]
     present_district = frequency["District_Name"][present_district]
@@ -155,9 +112,3 @@ def predictive_modeling_recidivism():
             st.success("🔵 The person is not likely to repeat the crime.")
         else:
             st.warning("🔴 The person is likely to repeat the crime.")
-
-
-
-
-
-

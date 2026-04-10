@@ -1,8 +1,6 @@
 import streamlit as st
-from streamlit_option_menu import option_menu
 import pandas as pd
 import numpy as np
-import streamlit.components.v1 as components
 from pulp import LpVariable, LpProblem, LpMaximize, lpSum, value
 
 def optimise_resource_allocation(district_name, sanctioned_asi, sanctioned_chc, sanctioned_cpc):

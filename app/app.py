@@ -1,25 +1,12 @@
 import streamlit as st
 from streamlit_option_menu import option_menu
 import pandas as pd
-import plotly.express as px
-from statsmodels.tsa.seasonal import seasonal_decompose
-import folium
-from folium import plugins
-from sklearn.cluster import DBSCAN
-import numpy as np
 import requests
-import plotly.io as pio
-import streamlit.components.v1 as components
-import matplotlib.pyplot as plt
-import seaborn as sns
-from streamlit_folium import folium_static
-import pickle
-from Criminal_Profiling import create_criminal_profiling_dashboard
-from Crime_Pattern_Analysis import *
-from Predictive_modeling import *
-from Resource_Allocation import *
-from Continuous_Learning_and_Feedback import *
 import os
+from Criminal_Profiling import create_criminal_profiling_dashboard
+from Crime_Pattern_Analysis import temporal_analysis, chloropleth_maps, crime_hotspots
+from Predictive_modeling import predictive_modeling_recidivism
+from Resource_Allocation import resource_allocation
 
 
 root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -70,8 +57,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 with st.sidebar:
-    selected = option_menu("Predictive Guardians", ['Home', 'Crime Pattern Analysis', "Criminal Profiling", 'Predictive Modeling', 'Police Resource Allocation and Management'], 
-        icons=['house-fill', 'bar-chart-fill', "fingerprint", 'cpu-fill', 'diagram-3-fill'], 
+    selected = option_menu(
+        "Predictive Guardians",
+        ['Home', 'Crime Pattern Analysis', 'Criminal Profiling', 'Predictive Modeling', 'Police Resource Allocation and Management'],
+        icons=['house-fill', 'bar-chart-fill', 'fingerprint', 'cpu-fill', 'diagram-3-fill'],
         menu_icon="shield-shaded", default_index=0, orientation="vertical",
         styles = {
         "container": {"padding": "5!important", "background-color": "#1c1e21"},
@@ -124,7 +113,7 @@ if selected == "Home":
         to shift from **reactive policing** to **proactive crime prevention**. 
         
         The system integrates **machine learning models**, **geospatial analysis**, and **optimization algorithms** 
-        to deliver actionable intelligence across four core modules.
+        to deliver actionable intelligence across the core analytical modules.
         """)
 
     st.markdown("---")
@@ -191,7 +180,7 @@ if selected == "Home":
     """)
 
     c1, c2, c3 = st.columns(3)
-    c1.metric("📂 Data Sources", "4 CSV Files")
+    c1.metric("📂 Data Sources", "5 CSV Files")
     c2.metric("🤖 ML Framework", "H2O AutoML")
     c3.metric("📊 Visualization", "Plotly + Folium")
 
