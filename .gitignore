@@ -1,9 +1,22 @@
-venv/
+﻿venv/
 venv311/
+.venv/
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
 .DS_Store
+
+# Datasets -- khong dua len git (file qua lon)
+dataset/
 datasets/
+Component_datasets/
+
+# Models
+models/Recidivism_model/*.zip
+models/Recidivism_model/*.pkl
+models/Recidivism_model/*.json
+models/Recidivism_model/*.jar
+
+# Misc
 issue/
-models/Recidivism_model/StackEnsemble_*.zip
+*.Zone.Identifier
