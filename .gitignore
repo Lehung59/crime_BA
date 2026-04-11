@@ -1,4 +1,4 @@
-﻿venv/
+venv/
 venv311/
 .venv/
 __pycache__/
@@ -10,6 +10,7 @@ __pycache__/
 dataset/
 datasets/
 Component_datasets/
+archive/
 
 # Models
 models/Recidivism_model/*.zip
