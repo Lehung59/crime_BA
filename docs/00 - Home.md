@@ -28,8 +28,9 @@
 - [[30 - Predictive Analytics|30 - Predictive Analytics (Dự đoán)]]
 - [[40 - Prescriptive Analytics|40 - Prescriptive Analytics (Đề xuất)]]
 
-### 📔 Nhật ký & Ghi chú
+### 📔 Nhật ký & Lộ trình
 - [[90 - Progress Log|90 - Progress Log]]
+- [[99 - Project Roadmap|99 - Lộ trình phát triển]]
 
 ---
 

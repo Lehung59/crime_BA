@@ -130,11 +130,11 @@ DESCRIPTIVE  →  DIAGNOSTIC  →  PREDICTIVE  →  PRESCRIPTIVE
 
 **Metric:** Precision, Recall, F1-score (Heinous class)
 
-### 3.4 Case Resolution Prediction — Dự báo khả năng Phá án
-- [ ] Dự báo xem vụ án có khả năng bị **Undetected** không
-- [ ] Features: CrimeGroup, District, IOName/IO_workload, Complaint_Mode
-- [ ] **Logistic Regression / Gradient Boosting**
-- [ ] **Mục đích:** Cảnh báo sớm cho vụ án có nguy cơ không phá được
+### 3.4 Advanced Interpretability Analytics (Phân tích Diễn giải Nâng cao)
+- [x] **Decision Tree Classifier:** Phân loại mức độ nghiêm trọng (Heinous vs Non-Heinous) để hiểu rõ các yếu tố ảnh hưởng.
+- [x] **Demographic Correlation:** Phân tích tương quan giữa Đặc điểm nhân thân (Caste, Occupation) và Loại tội phạm bằng Heatmap/Chi-square.
+- [x] **Dự báo khả năng Phá án & Tỷ lệ kết án:** Phân tích điểm hiệu quả xử lý của từng khu vực.
+- [x] **Mục đích:** Cung cấp logic minh bạch cho việc ra quyết định thay vì "hộp đen" AI.
 
 **Deliverable:** [[30 - Predictive Analytics]]
 
