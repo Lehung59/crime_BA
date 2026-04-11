@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 
 def clean_Criminal_Profiling(Criminal_Profiling):
 
@@ -10,7 +11,8 @@ def clean_Criminal_Profiling(Criminal_Profiling):
        'Caste', 'Sex']]
 
 
-    Criminal_Profiling.to_csv("../Component_datasets/Criminal_Profiling_cleaned.csv")
+    output_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'processed', 'Criminal_Profiling_cleaned.csv')
+    Criminal_Profiling.to_csv(output_path)
 
 
 

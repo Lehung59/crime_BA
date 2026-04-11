@@ -193,7 +193,7 @@ def clean_case_outcome_data(df):
     # 10. Save
     # =====================================================
     output_path = os.path.join(os.path.dirname(__file__), '..', 
-                               'Component_datasets', 'Case_Outcome_Cleaned.csv')
+                               'data', 'processed', 'Case_Outcome_Cleaned.csv')
     result.to_csv(output_path, index=False)
     logging.info(f"Saved cleaned data to Case_Outcome_Cleaned.csv ({len(result):,} rows)")
     
@@ -201,7 +201,10 @@ def clean_case_outcome_data(df):
 
 
 if __name__ == '__main__':
-    from ingest_data import ingest_case_outcome_data
+    import os
+    import sys
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+    from ingestion.ingest_case_outcome import ingest_case_outcome_data
     raw = ingest_case_outcome_data()
     clean_case_outcome_data(raw)
     print("Done!")

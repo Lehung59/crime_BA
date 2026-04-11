@@ -1,4 +1,4 @@
-import streamlit as st
+﻿import streamlit as st
 import pandas as pd
 import numpy as np
 import h2o
@@ -18,7 +18,7 @@ def init_h2o():
 @st.cache_data
 def load_data_recidivism():
     # Construct the file path
-    data_file_path = os.path.join(root_dir, 'Component_datasets', 'Recidivism_cleaned_data.csv')
+    data_file_path = os.path.join(root_dir, 'data', 'processed', 'Recidivism_cleaned_data.csv')
     return pd.read_csv(data_file_path)
 
 

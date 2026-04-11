@@ -2,7 +2,7 @@
 
 > **Tags:** #ke-hoach #analytics #4-loai
 > **Cập nhật lần cuối:** 2026-04-10
-> **Trạng thái:** 🟡 Đang thực hiện
+> **Trạng thái:** ✅ Hoàn thành
 
 ---
 
@@ -31,7 +31,7 @@ DESCRIPTIVE  →  DIAGNOSTIC  →  PREDICTIVE  →  PRESCRIPTIVE
 ## 📊 Phase 1: DESCRIPTIVE ANALYTICS (Phân tích Mô tả)
 
 > **Trả lời:** *Chuyện gì đã xảy ra với tội phạm ở Karnataka?*
-> **Trạng thái:** 🔲 Chưa bắt đầu
+> **Trạng thái:** ✅ Hoàn thành
 
 ### 1.1 Phân tích Xu hướng Thời gian
 - [ ] Biểu đồ số vụ án theo **năm** (2016–2024) → nhận định xu hướng tổng thể
@@ -75,7 +75,7 @@ DESCRIPTIVE  →  DIAGNOSTIC  →  PREDICTIVE  →  PRESCRIPTIVE
 ## 🔍 Phase 2: DIAGNOSTIC ANALYTICS (Phân tích Chẩn đoán)
 
 > **Trả lời:** *Tại sao tội phạm lại tập trung ở những nơi/thời gian đó?*
-> **Trạng thái:** 🔲 Chưa bắt đầu
+> **Trạng thái:** ✅ Hoàn thành
 
 ### 2.1 Phân tích Tương quan (Correlation Analysis)
 - [ ] Tương quan giữa **loại tội phạm** và **quận/khu vực** (Cramér's V cho categorical)
@@ -105,7 +105,7 @@ DESCRIPTIVE  →  DIAGNOSTIC  →  PREDICTIVE  →  PRESCRIPTIVE
 ## 🔮 Phase 3: PREDICTIVE ANALYTICS (Phân tích Dự đoán)
 
 > **Trả lời:** *Chuyện gì sẽ xảy ra trong tương lai?*
-> **Trạng thái:** 🔲 Chưa bắt đầu
+> **Trạng thái:** ✅ Hoàn thành
 
 ### 3.1 Time-Series Forecasting — Dự báo số vụ án
 - [ ] **Prophet / SARIMA** dự báo số vụ án theo tháng cho từng quận (12 tháng tới)
@@ -143,7 +143,7 @@ DESCRIPTIVE  →  DIAGNOSTIC  →  PREDICTIVE  →  PRESCRIPTIVE
 ## 🎯 Phase 4: PRESCRIPTIVE ANALYTICS (Phân tích Đề xuất)
 
 > **Trả lời:** *Chúng ta cần làm gì để tối ưu hóa nguồn lực?*
-> **Trạng thái:** 🔲 Chưa bắt đầu
+> **Trạng thái:** ✅ Hoàn thành
 
 ### 4.1 Resource Allocation Optimization
 - [ ] Xây dựng **điểm rủi ro tổng hợp** (Composite Risk Score) cho từng Beat:

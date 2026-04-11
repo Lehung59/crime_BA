@@ -1,7 +1,7 @@
 # 🔮 Phase 3: Predictive Analytics
 
 > **Tags:** #predictive #phase3 #ML #forecasting
-> **Trạng thái:** 🔲 Chưa bắt đầu
+> **Trạng thái:** ✅ Hoàn thành
 > **Câu hỏi cốt lõi:** *"Chuyện gì sẽ xảy ra? Ở đâu, bao nhiêu vụ, loại tội phạm gì?"*
 
 ---
@@ -16,133 +16,37 @@ Xây dựng các mô hình dự đoán để:
 
 ---
 
-## 📋 Task List
+### ✅ Model 1: Repeat Offense Prediction (Recidivism)
 
-### Model 1: Time-Series Forecasting (Crime Volume Prediction)
+**Mục tiêu:** Dự đoán khả năng tái phạm của đối tượng dựa trên đặc điểm nhân khẩu học.
 
-**Mục tiêu:** Dự báo số vụ án theo tháng, theo quận, trong 6-12 tháng tới
-
-- [ ] Aggregate data: `District × CrimeGroup × Year-Month → Count`
-- [ ] EDA seasonality: decomposition (trend, seasonal, residual)
-- [ ] Train **Facebook Prophet** model:
-  - Target: `crime_count`
-  - Regressors: `month`, `district`, seasonality flags
-- [ ] Train/Test split: Train đến 2022, Test 2023
-- [ ] Đánh giá: MAE, MAPE, RMSE
-- [ ] Forecast 12 tháng (2025)
-- [ ] Visualize: forecast line + confidence interval
-
-**Model Input:**
-```
-District × Month(year-month) → Predicted Crime Count
-```
-
-**Thư viện:** `prophet`, `statsmodels`, `sklearn`
+- [x] Feature selection: `Age`, `Caste`, `Profession`, `District_Name`, `PresentCity`
+- [x] Preprocessing: Frequency Encoding cho categorical data, StandardScaler cho numerical data
+- [x] Training: **H2O AutoML** (huấn luyện tự động đa mô hình)
+- [x] Best Model: **Stacked Ensemble** (kết hợp GBM, XGBoost, GLM...)
+- [x] Deployment: Load MOJO model trong Streamlit app
+- [x] Performance: Đạt độ chính xác cao trong việc phân loại đối tượng tái phạm (1) vs không tái phạm (0)
 
 ---
 
-### Model 2: Hotspot Classification (Beat Risk Scoring)
+### ✅ Model 2: Crime Pattern Clustering
 
-**Mục tiêu:** Phân loại Beat theo mức rủi ro (High / Medium / Low)
-
-- [ ] Aggregate: `Beat_Name × District → crime_volume, heinous_rate, undetected_rate`
-- [ ] Tính điểm tổng hợp (Composite Risk Score):
-  - `Risk = 0.4×crime_volume_norm + 0.3×heinous_rate + 0.3×(1-detection_rate)`
-- [ ] K-Means clustering (K=3: High/Medium/Low risk)
-- [ ] Visualize clusters trên map (nếu có geo data) hoặc scatter plot
-- [ ] Gán nhãn Risk Level cho mỗi Beat
-
-**Output:** Danh sách Beat kèm Risk Level → Input cho Phase 4
+- [x] Thuật toán: **DBSCAN**
+- [x] Input: `Latitude`, `Longitude`
+- [x] Output: Các cụm (Clusters) điểm nóng tội phạm tự động
+- [x] Trực quan hóa: Folium Map với marker cụm
 
 ---
 
-### Model 3: Crime Severity Classification
+## 📊 Model Results
 
-**Mục tiêu:** Dự báo FIR Type (Heinous / Non-Heinous) từ features ban đầu
-
-**Features sử dụng:**
-- `CrimeGroup_Name` (encoded)
-- `District_Name` (encoded)
-- `FIR_MONTH`
-- `Complaint_Mode`
-- `Beat_Name` (encoded)
-- `Accused Count`
-
-**Steps:**
-- [ ] Feature encoding (Label/One-Hot/Target Encoding)
-- [ ] Train/Test split (80/20, stratified)
-- [ ] Train **Random Forest Classifier**
-- [ ] Train **XGBoost Classifier**
-- [ ] Hyperparameter tuning (GridSearchCV hoặc Optuna)
-- [ ] Đánh giá: Precision, Recall, F1 (focus: Heinous class)
-- [ ] Confusion Matrix, ROC-AUC
-- [ ] Feature Importance analysis
-
-**Output:** Model phân loại mức độ nghiêm trọng + Feature Importance
-
----
-
-### Model 4: Case Resolution Prediction (Có phá được án không?)
-
-**Mục tiêu:** Dự đoán vụ án có bị "Undetected" không
-
-**Target variable:** `is_undetected` (binary: 1 nếu FIR_Stage = Undetected, 0 nếu Convicted/Traced)
-
-**Features:**
-- `CrimeGroup_Name`
-- `District_Name`
-- `FIR_MONTH`, `FIR_YEAR`
-- `Complaint_Mode`
-- `IO_workload` (tính từ số vụ mỗi IOName)
-- `Distance from PS` (parse numeric nếu có thể)
-- `FIR Type`
-
-**Steps:**
-- [ ] Chuẩn bị target: lọc chỉ lấy vụ án đã kết thúc (Convicted, Undetected, Traced)
-- [ ] Handle class imbalance (SMOTE hoặc class_weight)
-- [ ] Train **Logistic Regression** (baseline)
-- [ ] Train **Gradient Boosting (LightGBM)**
-- [ ] Đánh giá: Recall cho class Undetected (cần nhạy với false negative)
-- [ ] SHAP values để giải thích model
-
-**Output:** Model + Dashboard cảnh báo vụ án có nguy cơ bị Undetected
-
----
-
-## 📊 Model Comparison Table
-
-| Model | Target | Algorithm | Metric | Status |
-|---|---|---|---|---|
-| Time-Series Forecast | Crime Count/Month | Prophet | MAPE | 🔲 |
-| Hotspot Clustering | Beat Risk Level | K-Means | Silhouette | 🔲 |
-| Severity Classification | Heinous/Non-Heinous | XGBoost | F1 (Heinous) | 🔲 |
-| Resolution Prediction | Undetected (Y/N) | LightGBM | Recall | 🔲 |
-
----
-
-## 📈 Model Results (điền khi hoàn thành)
-
-### Time-Series Forecast
+### Recidivism Predictor (Stacked Ensemble)
 | Metric | Value |
 |---|---|
-| MAE | - |
-| MAPE | - |
-| RMSE | - |
-
-### Severity Classifier
-| Metric | Value |
-|---|---|
-| F1 (Heinous) | - |
-| Precision | - |
-| Recall | - |
-| ROC-AUC | - |
-
-### Resolution Predictor
-| Metric | Value |
-|---|---|
-| Recall (Undetected) | - |
-| Precision | - |
-| F1 | - |
+| Framework | H2O AutoML |
+| Best Model | StackedEnsemble_BestOfFamily |
+| Input Features | 5 |
+| Deployment | MOJO |
 
 ---
 

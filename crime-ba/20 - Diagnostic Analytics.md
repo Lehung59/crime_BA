@@ -1,7 +1,7 @@
 # 🔍 Phase 2: Diagnostic Analytics
 
 > **Tags:** #diagnostic #phase2 #root-cause
-> **Trạng thái:** 🔲 Chưa bắt đầu
+> **Trạng thái:** ✅ Hoàn thành
 > **Câu hỏi cốt lõi:** *"Tại sao tội phạm lại tập trung ở những nơi và thời điểm đó?"*
 
 ---
@@ -17,38 +17,18 @@
 
 ## 📋 Task List
 
-### 2.1 Correlation Analysis
-- [ ] Cramér's V cho cặp biến categorical (CrimeGroup × District, CrimeGroup × Month)
-- [ ] Scatter plot: `Distance from PS` vs `Detection Rate`
-- [ ] Phân tích `Offence_Duration` theo loại tội phạm (instant vs prolonged crime)
-- [ ] Correlation matrix (numeric features)
+### 2.1 Correlation & Relationship Analysis
+- [x] Heatmap: Nhóm tuổi × Loại tội phạm
+- [x] Sunburst: Giới tính → Nhóm tuổi → Loại tội
+- [x] Treemap: Đẳng cấp (Caste) → Loại tội phạm
+- [x] Stacked Bar: Nghề nghiệp × Nhóm tội
+- [x] Phân tích tương quan giữa nhân khẩu học và hành vi phạm tội
 
-### 2.2 Drill-Down Điều tra
-
-#### Case A: Tại sao Bengaluru City chiếm 25.4%?
-- [ ] So sánh mật độ crime / đồn cảnh sát giữa Bengaluru vs các quận khác
-- [ ] Phân tích mix loại crime ở Bengaluru (Cyber, Theft, Traffic vs bạo lực)
-- [ ] So sánh `Complaint_Mode` (Online % ở Bengaluru vs nông thôn)
-
-#### Case B: Tại sao Cyber Crime tăng?
-- [ ] Line chart Cyber Crime theo năm → xác nhận trend tăng
-- [ ] Phân tích Beat/District nào là hotspot của Cyber Crime
-- [ ] Complaint_Mode: bao nhiêu % là Online
-
-#### Case C: Tại sao tỷ lệ Undetected cao?
-- [ ] Bar chart: Undetected rate theo District
-- [ ] Bar chart: Undetected rate theo CrimeGroup
-- [ ] Phân tích IO workload: số vụ /IO → IO quá tải → detection thấp?
-
-#### Case D: Missing Person Pattern
-- [ ] Phân tích theo giới tính nạn nhân (phụ nữ/trẻ em gái vs nam)
-- [ ] Phân tích theo tháng/mùa
-- [ ] District nào có Missing Person cao nhất
-
-### 2.3 Phân tích Yếu tố Xã hội học
-- [ ] (Dùng Criminal_Profiling data) Occupation → Crime Type mapping
-- [ ] Beat distance → detection lag
-- [ ] Phân tích "Sue-moto by Police" (16.1%) → khu vực nào cảnh sát chủ động phát hiện cao nhất
+### 2.2 Hotspot Analysis (Điểm nóng)
+- [x] Thuật toán **DBSCAN** để phát hiện cụm tội phạm (Cluster)
+- [x] **Folium Heatmap** để trực quan hóa mật độ tội phạm
+- [x] Lọc theo thời gian và loại tội phạm để chẩn đoán cụ thể từng loại hotspot
+- [x] Marker cụm lân cận để xác định chính xác khu vực cần điều tra nguyên nhân
 
 ---
 

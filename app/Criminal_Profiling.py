@@ -1,4 +1,4 @@
-import streamlit as st
+﻿import streamlit as st
 from streamlit_option_menu import option_menu
 import pandas as pd
 import plotly.express as px
@@ -13,7 +13,7 @@ root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 def create_criminal_profiling_dashboard():
 
     # Construct the file path
-    data_file_path = os.path.join(root_dir, 'Component_datasets', 'Criminal_Profiling_cleaned.csv')
+    data_file_path = os.path.join(root_dir, 'data', 'processed', 'Criminal_Profiling_cleaned.csv')
     Criminal_Profiling = pd.read_csv(data_file_path)
 
     # --- Common style settings ---
@@ -109,7 +109,7 @@ def create_criminal_profiling_dashboard():
         xaxis=dict(title='Tuổi', gridcolor=COLOR_GRID, showgrid=True, zeroline=False, dtick=10, range=[5, 100]),
         yaxis=dict(title='Số lượng', gridcolor=COLOR_GRID, showgrid=True, zeroline=False),
         bargap=0.05, showlegend=False)
-    st.plotly_chart(fig_age, use_container_width=True)
+    st.plotly_chart(fig_age, width='stretch')
 
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("👥 Tổng", f"{len(age_data):,}")
@@ -150,7 +150,7 @@ def create_criminal_profiling_dashboard():
         xaxis=dict(title='Giới tính', gridcolor=COLOR_GRID),
         yaxis=dict(title='Số lượng (log scale)', gridcolor=COLOR_GRID, showgrid=True, type='log'),
         height=400, bargap=0.4)
-    st.plotly_chart(fig_gen, use_container_width=True)
+    st.plotly_chart(fig_gen, width='stretch')
 
     # Stats
     gen_cols = st.columns(len(gender_counts))
@@ -188,7 +188,7 @@ def create_criminal_profiling_dashboard():
         title=dict(text='Top 10 Đẳng cấp trong Hồ sơ Tội phạm', font=dict(size=18, color='#1b2838')),
         xaxis=dict(title='Đẳng cấp', gridcolor=COLOR_GRID, tickangle=-30),
         yaxis=dict(title='Số lượng', gridcolor=COLOR_GRID, showgrid=True), bargap=0.2)
-    st.plotly_chart(fig_caste, use_container_width=True)
+    st.plotly_chart(fig_caste, width='stretch')
 
     st.markdown("---")
 
@@ -223,7 +223,7 @@ def create_criminal_profiling_dashboard():
         title=dict(text='Top 10 Nghề nghiệp liên quan đến Tội phạm', font=dict(size=18, color='#1b2838')),
         xaxis=dict(title='Số lượng', gridcolor=COLOR_GRID, showgrid=True),
         yaxis=dict(title='', gridcolor=COLOR_GRID), bargap=0.25, height=450)
-    st.plotly_chart(fig_occ, use_container_width=True)
+    st.plotly_chart(fig_occ, width='stretch')
 
     st.markdown("---")
 
@@ -255,7 +255,7 @@ def create_criminal_profiling_dashboard():
             title=dict(text='Top 5 Nhóm Tội phạm Phổ biến nhất', font=dict(size=17, color='#1b2838')),
             xaxis=dict(title='Nhóm tội', gridcolor=COLOR_GRID, tickangle=-15),
             yaxis=dict(title='Số lượng', gridcolor=COLOR_GRID, showgrid=True), bargap=0.3)
-        st.plotly_chart(fig_cg, use_container_width=True)
+        st.plotly_chart(fig_cg, width='stretch')
 
     with tabs[1]:
         fig_ch = go.Figure(data=[go.Bar(
@@ -267,7 +267,7 @@ def create_criminal_profiling_dashboard():
             title=dict(text='Top 5 Phân loại nhỏ', font=dict(size=17, color='#1b2838')),
             xaxis=dict(title='Phân loại', gridcolor=COLOR_GRID, tickangle=-15),
             yaxis=dict(title='Số lượng', gridcolor=COLOR_GRID, showgrid=True), bargap=0.3)
-        st.plotly_chart(fig_ch, use_container_width=True)
+        st.plotly_chart(fig_ch, width='stretch')
 
     st.markdown("---")
 
@@ -314,7 +314,7 @@ def create_criminal_profiling_dashboard():
         title=dict(text='Heatmap: Nhóm tuổi × Loại tội phạm', font=dict(size=17, color='#1b2838')),
         xaxis=dict(title='Loại tội phạm', tickangle=-25),
         yaxis=dict(title='Nhóm tuổi'), height=450)
-    st.plotly_chart(fig_heat, use_container_width=True)
+    st.plotly_chart(fig_heat, width='stretch')
 
     st.markdown("---")
 
@@ -343,7 +343,7 @@ def create_criminal_profiling_dashboard():
                           title='Treemap: Đẳng cấp → Loại tội phạm')
     fig_tree.update_layout(**common_layout, height=550, title=dict(font=dict(size=17, color='#1b2838')))
     fig_tree.update_traces(hovertemplate='<b>%{label}</b><br>Số vụ: %{value:,}<extra></extra>', textinfo='label+value')
-    st.plotly_chart(fig_tree, use_container_width=True)
+    st.plotly_chart(fig_tree, width='stretch')
 
     st.markdown("---")
 
@@ -370,7 +370,7 @@ def create_criminal_profiling_dashboard():
                           title='Sunburst: Giới tính → Nhóm tuổi → Loại tội')
     fig_sun.update_layout(**common_layout, height=550, title=dict(font=dict(size=17, color='#1b2838')))
     fig_sun.update_traces(hovertemplate='<b>%{label}</b><br>Số vụ: %{value:,}<br>% của nhóm cha: %{percentParent:.1%}<extra></extra>')
-    st.plotly_chart(fig_sun, use_container_width=True)
+    st.plotly_chart(fig_sun, width='stretch')
 
     st.markdown("---")
 
@@ -408,7 +408,7 @@ def create_criminal_profiling_dashboard():
         yaxis=dict(title='', gridcolor=COLOR_GRID),
         legend=dict(orientation='h', yanchor='bottom', y=-0.3, xanchor='center', x=0.5, font=dict(size=11)),
         height=500, bargap=0.2)
-    st.plotly_chart(fig_stack, use_container_width=True)
+    st.plotly_chart(fig_stack, width='stretch')
 
     st.markdown("---")
 

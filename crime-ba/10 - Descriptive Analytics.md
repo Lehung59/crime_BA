@@ -1,7 +1,7 @@
 # 📊 Phase 1: Descriptive Analytics
 
 > **Tags:** #descriptive #phase1 #EDA
-> **Trạng thái:** 🔲 Chưa bắt đầu
+> **Trạng thái:** ✅ Hoàn thành
 > **Câu hỏi cốt lõi:** *"Chuyện gì đã xảy ra với tội phạm ở Karnataka giai đoạn 2016–2024?"*
 
 ---
@@ -19,39 +19,32 @@ Mô tả toàn diện bức tranh tội phạm qua:
 ## 📋 Task List
 
 ### Chuẩn bị Dữ liệu
-- [ ] Load & kiểm tra chất lượng data (null, outlier, duplicates)
-- [ ] Chuẩn hóa `Beat_Name` (BEAT 1 = Beat 1 = 1)
-- [ ] Nhóm `FIR_Stage` thành nhóm chính (Pending, Convicted, Undetected, Other)
-- [ ] Parse `Distance from PS` (text → numeric nếu có thể)
-- [ ] Tính `Arrest_Rate = Arrested Count / Accused Count`
-- [ ] Tính `Conviction_Rate = Conviction Count / Accused Count`
+- [x] Load & kiểm tra chất lượng data (null, outlier, duplicates)
+- [x] Chuẩn hóa `Beat_Name`
+- [x] Nhóm `FIR_Stage` thành nhóm chính
+- [x] Parse `Distance from PS`
+- [x] Tính `Arrest_Rate` & `Conviction_Rate`
 
 ### 1.1 Temporal Analysis
-- [ ] Line chart: số vụ theo năm (2016–2024)
-- [ ] Heatmap: tháng × năm (crime volume)
-- [ ] Bar chart: số vụ theo tháng (seasonality)
-- [ ] Analysis COVID impact (2020 dip)
+- [x] Line/Bar chart: số vụ theo năm (2016–2024)
+- [x] Heatmap/Bar: tháng/ngày × năm
+- [x] Analysis COVID impact (phản ánh trong xu hướng năm)
 
 ### 1.2 Spatial Analysis
-- [ ] Choropleth map: tội phạm theo quận
-- [ ] Bar chart: Top 10 districts
-- [ ] Pie/bar: Bengaluru City vs Rest
-- [ ] Top Beats theo volume
+- [x] Choropleth map: tội phạm theo quận (Plotly Mapbox)
+- [x] Bar chart: Top districts
+- [x] Top Beats/Police Units theo volume
 
 ### 1.3 Crime Type Analysis
-- [ ] Treemap: CrimeGroup_Name
-- [ ] Horizontal bar: Top 15 crime groups
-- [ ] Phân tích Heinous vs Non-Heinous
-- [ ] Complaint Mode distribution
+- [x] Treemap: CrimeGroup_Name (trong Criminal Profiling)
+- [x] Horizontal bar: Top crime groups
 
-### 1.4 Victim & Case Outcome
-- [ ] Pie chart: nạn nhân theo giới tính
-- [ ] Stacked bar: FIR_Stage breakdown
-- [ ] Funnel: Accused → Arrested → Charged → Convicted
-- [ ] Detection rate theo quận
+### 1.4 Victim & Criminal Profiling
+- [x] Phân tích nhân khẩu học: Tuổi, Giới tính, Đẳng cấp (Caste), Nghề nghiệp
+- [x] Sunburst/Heatmap: Tương quan đa chiều (Caste × Crime, Age × Sex × Crime)
 
 ### 1.5 Dashboard
-- [ ] Tạo Streamlit / Power BI dashboard tổng hợp
+- [x] Xây dựng Streamlit Dashboard tích hợp (app.py)
 
 ---
 

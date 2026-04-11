@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "02 - Metadata Dataset.md",
+                "file": "30 - Predictive Analytics.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "02 - Metadata Dataset"
+              "title": "30 - Predictive Analytics"
             }
           }
         ]
@@ -114,7 +114,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "01 - Ke hoach thuc hien.md",
+                "file": "2026-04-10.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -124,7 +124,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for 01 - Ke hoach thuc hien"
+              "title": "Backlinks for 2026-04-10"
             }
           },
           {
@@ -133,12 +133,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "01 - Ke hoach thuc hien.md",
+                "file": "2026-04-10.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from 01 - Ke hoach thuc hien"
+              "title": "Outgoing links from 2026-04-10"
             }
           },
           {
@@ -176,13 +176,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "01 - Ke hoach thuc hien.md",
+                "file": "2026-04-10.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of 01 - Ke hoach thuc hien"
+              "title": "Outline of 2026-04-10"
             }
           }
         ]
@@ -203,19 +203,19 @@
       "bases:Create new base": false
     }
   },
-  "active": "b11a9be586e31ad6",
+  "active": "8d4ff27a30dd0ba2",
   "lastOpenFiles": [
+    "2026-04-10.md",
+    "02 - Metadata Dataset.md",
+    "01 - Ke hoach thuc hien.md",
     "95 - Code Cleanup Report.md",
     "CODE_AUDIT.md",
     "00 - Home.md",
-    "02 - Metadata Dataset.md",
     "90 - Progress Log.md",
     "40 - Prescriptive Analytics.md",
     "30 - Predictive Analytics.md",
     "20 - Diagnostic Analytics.md",
     "10 - Descriptive Analytics.md",
-    "01 - Ke hoach thuc hien.md",
-    "2026-04-10.md",
     "Untitled 1.canvas",
     "Untitled.canvas",
     "Welcome.md"

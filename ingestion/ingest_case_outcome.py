@@ -27,7 +27,7 @@ def ingest_case_outcome_data():
     - Conviction Count: Số vụ kết án thành công
     """
 
-    raw_path = os.path.join(os.path.dirname(__file__), '..', 'archive', 'FIR_Details_Data.csv')
+    raw_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'raw', 'FIR_Details_Data.csv')
     logging.info("Loading raw FIR_Details_Data.csv (~570MB)...")
     
     fir = pd.read_csv(raw_path)

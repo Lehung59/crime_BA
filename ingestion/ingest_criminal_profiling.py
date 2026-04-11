@@ -1,9 +1,14 @@
 import pandas as pd
+import os
 
 def ingest_criminal_profiling():
-    MOB = pd.read_csv("../datasets/MOBsData.csv")
-    rowdy = pd.read_csv("../datasets/RowdySheeterDetails.csv")
-    accused = pd.read_csv("../datasets/AccusedData.csv")
+    MOB_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'raw', 'MOBsData.csv')
+    rowdy_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'raw', 'RowdySheeterDetails.csv')
+    accused_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'raw', 'AccusedData.csv')
+    
+    MOB = pd.read_csv(MOB_path)
+    rowdy = pd.read_csv(rowdy_path)
+    accused = pd.read_csv(accused_path)
 
     accused = accused[(accused['age'] <= 100) & (accused['age'] >= 7) ]
 

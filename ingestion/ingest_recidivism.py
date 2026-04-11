@@ -1,9 +1,11 @@
 import pandas as pd
+import os
 
 
 
 def ingest_recidivism_data():
-   acused = pd.read_csv("../datasets/AccusedData.csv")
+   acc_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'raw', 'AccusedData.csv')
+   acused = pd.read_csv(acc_path)
 
    acused.dropna(subset = ['age', 'Caste', 'Profession', 'Sex',
        'PresentCity', 'PresentState', 'Person_No'], inplace = True)

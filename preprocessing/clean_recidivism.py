@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 from imblearn.over_sampling import RandomOverSampler
 from imblearn.under_sampling import RandomUnderSampler
 import random
@@ -42,7 +43,8 @@ def clean_recividism_model(acused):
     balanced_data = pd.concat([oversampled_data, undersampled_data])
 
     
-    balanced_data.to_csv("../Component_datasets/Recidivism_cleaned_data.csv")
+    output_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'processed', 'Recidivism_cleaned_data.csv')
+    balanced_data.to_csv(output_path)
 
     return balanced_data
 

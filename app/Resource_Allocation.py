@@ -1,4 +1,4 @@
-import streamlit as st
+﻿import streamlit as st
 import pandas as pd
 import numpy as np
 from pulp import LpVariable, LpProblem, LpMaximize, lpSum
@@ -113,7 +113,7 @@ def allocate_resources(option, district_df, updated_asi, updated_chc, updated_cp
             "Allocated CHC": "CHC phân bổ",
             "Allocated CPC": "CPC phân bổ",
         }).reset_index(drop=True),
-        use_container_width=True,
+        width='stretch',
         height=450,
     )
 
@@ -199,9 +199,9 @@ def resource_allocation(df):
     st.markdown("---")
     col_btn1, col_btn2 = st.columns(2)
     with col_btn1:
-        default = st.button("Dùng biên chế mặc định", use_container_width=True)
+        default = st.button("Dùng biên chế mặc định", width='stretch')
     with col_btn2:
-        apply = st.button("Áp dụng biên chế tùy chỉnh", use_container_width=True)
+        apply = st.button("Áp dụng biên chế tùy chỉnh", width='stretch')
 
     if (default or st.session_state.default) and not st.session_state.apply:
         st.session_state.apply = False

@@ -8,7 +8,8 @@ import sys
 logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s', handlers=[logging.StreamHandler(sys.stdout)])
 
 def ingest_crime_pattern_analysis():
-    fir_details = pd.read_csv("../datasets/FIR_Details_Data.csv")
+    raw_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'raw', 'FIR_Details_Data.csv')
+    fir_details = pd.read_csv(raw_path)
     logging.info("Ingested the raw datasets for Crime Pattern Analysis")
 
     #Feature selection

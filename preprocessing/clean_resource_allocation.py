@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import os
 
 
 def clean_resource_data(df):
@@ -282,7 +283,8 @@ def clean_resource_data(df):
 
 
     # Save the new dataset to a new CSV file
-    df.to_csv("../Component_datasets/Resource_Allocation_Cleaned.csv", index = False)
+    output_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'processed', 'Resource_Allocation_Cleaned.csv')
+    df.to_csv(output_path, index = False)
 
 
 

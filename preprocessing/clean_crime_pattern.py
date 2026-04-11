@@ -43,7 +43,8 @@ def clean_data_crime_pattern_analysis(clean_df):
     crime_pattern_analysis = clean_df.copy()
 
     #Get Karnataka Police Stations and their unit's lat-long details
-    PS_lat_long = pd.read_csv('../datasets/Polce_Stations_Lat_Long.csv')
+    ps_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'raw', 'Polce_Stations_Lat_Long.csv')
+    PS_lat_long = pd.read_csv(ps_path)
 
     # merge both datasets
     crime_data = pd.merge(crime_pattern_analysis,PS_lat_long, on = "UnitName", suffixes=('_first', '_second'))
@@ -194,7 +195,8 @@ def update_crime_lat_long(new_data):
                             (new_data["Longitude"] < 74))]
 
     # Save the new dataset to a new CSV file
-    new_data.to_csv("../Component_datasets/Crime_Pattern_Analysis_Cleaned.csv", index=False)
+    output_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'processed', 'Crime_Pattern_Analysis_Cleaned.csv')
+    new_data.to_csv(output_path, index=False)
 
     logging.info("Dataset is processed and ready with accurate crime co-ordinates now")
 

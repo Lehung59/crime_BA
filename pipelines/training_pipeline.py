@@ -2,16 +2,16 @@ import os
 import sys
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(project_root)
-from Crime_Pattern_Analysis.ingest_data import *
-from Crime_Pattern_Analysis.clean_data import *
-from Criminal_Profiling.ingest_data import *
-from Criminal_Profiling.clean_data import *
-from Predictive_Modeling.Recidivism_Prediction.ingest_data import *
-from Predictive_Modeling.Recidivism_Prediction.clean_data import *
-from Predictive_Modeling.Recidivism_Prediction.train_model import *
-from Predictive_Modeling.Recidivism_Prediction.transform_data import *
-from Resource_Allocation.ingest_data import *
-from Resource_Allocation.clean_data import *
+from ingestion.ingest_crime_pattern import *
+from preprocessing.clean_crime_pattern import *
+from ingestion.ingest_criminal_profiling import *
+from preprocessing.clean_criminal_profiling import *
+from ingestion.ingest_recidivism import *
+from preprocessing.clean_recidivism import *
+from modeling.train_recidivism import *
+from preprocessing.transform_recidivism import *
+from ingestion.ingest_resource_allocation import *
+from preprocessing.clean_resource_allocation import *
 
 
 def crime_pattern_analysis():

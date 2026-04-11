@@ -43,8 +43,8 @@
 
 - [x] Nghiên cứu metadata dataset
 - [x] Xây dựng kế hoạch thực hiện
-- [ ] Descriptive Analytics
-- [ ] Diagnostic Analytics
-- [ ] Predictive Analytics
-- [ ] Prescriptive Analytics
-- [ ] Dashboard & Báo cáo cuối
+- [x] Descriptive Analytics
+- [x] Diagnostic Analytics
+- [x] Predictive Analytics
+- [x] Prescriptive Analytics
+- [x] Dashboard & Báo cáo cuối

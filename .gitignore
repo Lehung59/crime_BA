@@ -9,6 +9,7 @@ __pycache__/
 # Datasets -- khong dua len git (file qua lon)
 dataset/
 datasets/
+data/
 Component_datasets/
 archive/
 
