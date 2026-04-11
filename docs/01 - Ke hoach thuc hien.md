@@ -225,7 +225,7 @@ gantt
 
 ```
 crime_BA/
-├── crime-ba/                    ← Obsidian vault
+├── docs/                        ← Obsidian vault
 │   ├── 00 - Home.md
 │   ├── 01 - Ke hoach thuc hien.md
 │   ├── 02 - Metadata Dataset.md
@@ -234,11 +234,13 @@ crime_BA/
 │   ├── 30 - Predictive Analytics.md
 │   ├── 40 - Prescriptive Analytics.md
 │   └── 90 - Progress Log.md
-├── dataset/
-│   └── FIR_Details_Data.csv
-├── Crime_Pattern_Analysis/
-├── Predictive_Modeling/
-├── Resource_Allocation/
+├── data/
+│   ├── raw/
+│   └── processed/
+├── ingestion/
+├── preprocessing/
+├── modeling/
+├── pipelines/
 └── app/
 ```
 

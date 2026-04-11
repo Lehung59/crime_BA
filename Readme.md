@@ -51,13 +51,11 @@ python pipelines/training_pipeline.py
 ## 3. Cấu trúc dự án
 
 ```
-├── app/                          # Streamlit UI — từng file = 1 module dashboard
-│   ├── app.py                    # Entry point + routing
-│   ├── Crime_Pattern_Analysis.py # Module 1: Phân tích hình mẫu
-│   ├── Criminal_Profiling.py     # Module 2: Hồ sơ tội phạm
-│   ├── Case_Outcome_Monitoring.py# Module 3: Theo dõi kết quả xử lý
-│   └── Resource_Allocation.py    # Module 4: Phân bổ nguồn lực
-│
+├── app/                          # Streamlit UI (Phần giao diện)
+├── docs/                         # Trung tâm tài liệu (Obsidian Vault)
+│   ├── 00 - Home.md              # Trang chủ tài liệu
+│   ├── 02 - Metadata Dataset.md  # Giải thích dữ liệu chi tiết
+│   └── ...
 ├── data/                         # Trung tâm quản lý dữ liệu
 │   ├── raw/                      # Dữ liệu gốc (FIR_Details_Data.csv, v.v.)
 │   └── processed/                # Dữ liệu đã làm sạch (CSV) — dashboard đọc từ đây
@@ -167,4 +165,4 @@ Ngoài ra, module Criminal Profiling kết hợp thêm 3 bộ dữ liệu phụ:
 
 ## 5. Tham khảo thêm
 
-- `Data_Dictionary_VN.md` — Giải thích chi tiết hệ thống đẳng cấp Ấn Độ, nghề nghiệp, nhóm tội phạm bằng tiếng Việt.
+- `docs/02 - Metadata Dataset.md` — Giải thích chi tiết hệ thống đẳng cấp Ấn Độ, nghề nghiệp, nhóm tội phạm bằng tiếng Việt.
