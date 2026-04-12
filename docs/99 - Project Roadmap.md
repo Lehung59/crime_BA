@@ -30,11 +30,11 @@
 - [ ] **Xử lý dữ liệu tọa độ thiếu:** 
     - Geocoding dựa trên địa điểm thực tế để hoàn thiện bản đồ nhiệt (Heatmap).
 
-## 🚀 4. Triển khai & Demo (Deployment)
+## 🚀 4. Tổng kết & Báo cáo (Summary & Reporting)
 
-- [ ] **Triển khai Cloud:** Đưa ứng dụng lên Streamlit Cloud hoặc Server nội bộ để cấp trên có thể truy cập qua URL.
 - [ ] **Video Demo:** Quay video giới thiệu các luồng nghiệp vụ chính: *Phát hiện điểm nóng -> Phân tích hồ sơ -> Đề xuất chia quân.*
 - [ ] **Tài liệu hướng dẫn (User Manual):** Viết hướng dẫn sử dụng nhanh dành cho cán bộ cảnh sát.
+- [ ] **Slide thuyết trình:** Tổng hợp các insight quan trọng nhất từ 4 module phân tích.
 
 ---
 

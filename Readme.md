@@ -38,13 +38,12 @@ streamlit run app/app.py
 Ứng dụng sẽ khả dụng tại địa chỉ: `http://localhost:8501`.
 
 ### 2.3. Chạy Pipeline xử lý dữ liệu (ETL)
-Nếu bạn cập nhật dữ liệu mới trong `data/raw/` hoặc muốn huấn luyện lại mô hình:
+Nếu bạn cập nhật dữ liệu mới trong `data/raw/` hoặc muốn phân tích sâu hơn:
 
 ```powershell
-# Chạy toàn bộ quy trình: Ingestion -> Preprocessing -> Modeling
-python pipelines/training_pipeline.py
+# Chạy quy trình Tiền xử lý dữ liệu & Phân tích
+python pipelines/data_processing_pipeline.py
 ```
-*Lưu ý: Quá trình này yêu cầu Java (JDK 8+) để vận hành H2O AutoML.*
 
 ---
 
@@ -62,8 +61,8 @@ python pipelines/training_pipeline.py
 │
 ├── ingestion/                    # Giai đoạn 1: Ingest dữ liệu thô
 ├── preprocessing/                # Giai đoạn 2: Cleaning & Feature Engineering
-├── modeling/                     # Giai đoạn 3: Huấn luyện mô hình (Recidivism Prediction)
-├── optimization/                 # Giai đoạn 4: Logic tối ưu hóa nguồn lực
+├── documentation/                # (Nếu có) Tài liệu báo cáo chi tiết
+├── optimization/                 # Giai đoạn 4: Logic tối ưu hóa nguồn lực (Resource Allocation)
 │
 ├── models/                       # Lưu trữ các file mô hình đã huấn luyện (.pkl, .mojo)
 ├── pipelines/                    # Pipeline tự động hóa training

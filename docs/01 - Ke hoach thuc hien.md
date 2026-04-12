@@ -212,11 +212,9 @@ gantt
 |---|---|
 | **Python (pandas, numpy)** | EDA, data cleansing |
 | **Matplotlib / Seaborn / Plotly** | Visualization |
-| **scikit-learn** | Classification, clustering |
-| **Facebook Prophet / statsmodels** | Time-series forecasting |
-| **H2O AutoML** | Recidivism & severity prediction |
+| **scikit-learn** | Classification, clustering, correlation |
 | **PuLP / SciPy** | Linear programming (resource allocation) |
-| **Power BI / Streamlit** | Dashboard |
+| **Streamlit** | Dashboard |
 | **Obsidian** | Ghi chú & quản lý tiến độ |
 
 ---
