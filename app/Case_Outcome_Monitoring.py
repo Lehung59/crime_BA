@@ -180,9 +180,9 @@ def create_case_outcome_dashboard():
 
     st.markdown(f"""
     <div class="story-insight">
-        📌 <b>Insight:</b> Quận có tỷ lệ kết án cao nhất là <b>{best_dist}</b> ({dist_conv_rate.iloc[0]:.1f}%),
-        trong khi quận thấp nhất là <b>{worst_dist}</b> ({dist_conv_rate.iloc[-1]:.1f}%).
-        Sự chênh lệch lớn giữa các quận phản ánh sự khác biệt trong năng lực điều tra và nguồn lực tư pháp.
+        📌 <b>Insight:</b> Quận có tỷ lệ kết án cao nhất là <b>{best_dist}</b> ({dist_conv_rate.iloc[0]:.1f}%), trong khi thấp nhất là <b>{worst_dist}</b> ({dist_conv_rate.iloc[-1]:.1f}%).<br><br>
+        🤔 <b>Vì sao?</b> Sự chênh lệch khổng lồ thường do hạ tầng pháp lý (số lượng thẩm phán, tòa án) và chất lượng đào tạo điều tra viên ở các vùng phát triển (như Bengaluru) tốt hơn hẳn các vùng sâu xa.<br><br>
+        ⚠️ <b>Điểm bất hợp lý:</b> Tỷ lệ kết án quá cao (lên tới >90%) ở một số vùng nhỏ có thể là do cơ quan điều tra chỉ khởi tố những vụ án "chắc thắng" (Cherry-picking), và lờ đi (không lập FIR) các vụ án khó để bảo vệ thành tích.
     </div>
     """, unsafe_allow_html=True)
 
@@ -230,9 +230,9 @@ def create_case_outcome_dashboard():
 
     st.markdown(f"""
     <div class="story-insight">
-        📌 <b>Insight:</b> Tỷ lệ tội phạm nghiêm trọng (Heinous) đang có xu hướng <b>{trend_dir}</b>.
-        Năm gần nhất, tội nghiêm trọng chiếm <b>{heinous_rate.iloc[-1]:.1f}%</b> tổng số vụ.
-        Thông tin này giúp cảnh sát đánh giá liệu tình hình an ninh đang cải thiện hay xấu đi.
+        📌 <b>Insight:</b> Tỷ lệ tội phạm nghiêm trọng (Heinous) đang có xu hướng <b>{trend_dir}</b>, chiếm <b>{heinous_rate.iloc[-1]:.1f}%</b> trong năm gần nhất.<br><br>
+        🤔 <b>Vì sao?</b> Nếu xu hướng giảm, có thể do hiệu quả răn đe của luật pháp hoặc kinh tế vĩ mô ổn định. Ngược lại, nếu tăng, thường đi kèm với sự bùng nổ dân số cơ học và bất bình đẳng thu nhập ở các đô thị lõi.<br><br>
+        ⚠️ <b>Điểm bất hợp lý:</b> Quy trình nâng/hạ mức độ án (Downgrading). Khá nhiều vụ án bạo lực nghiêm trọng (Heinous) có thể bị ghi nhận hạ bậc thành xô xát thông thường (Non-Heinous) trong quá trình thương lượng hòa giải để giảm nhẹ án hoặc do tham nhũng.
     </div>
     """, unsafe_allow_html=True)
 
@@ -276,10 +276,9 @@ def create_case_outcome_dashboard():
 
     st.markdown(f"""
     <div class="story-insight">
-        📌 <b>Insight:</b> Trong tổng số <b>{total_victims:,}</b> nạn nhân được ghi nhận:
-        Nam giới chiếm <b>{total_male_v/total_victims*100:.1f}%</b>,
-        Nữ giới chiếm <b>{total_female_v/total_victims*100:.1f}%</b>,
-        và Trẻ em chiếm <b>{total_minor_v/total_victims*100:.1f}%</b>.
+        📌 <b>Insight:</b> Trong <b>{total_victims:,}</b> nạn nhân: Nam chiếm <b>{total_male_v/total_victims*100:.1f}%</b>, Nữ <b>{total_female_v/total_victims*100:.1f}%</b>, Trẻ em <b>{total_minor_v/total_victims*100:.1f}%</b>.<br><br>
+        🤔 <b>Vì sao?</b> Nam giới áp đảo cả trong tỷ lệ phạm tội lẫn nạn nhân vì họ là nhóm trực tiếp lao vào các giao dịch rủi ro cao ngoài xã hội (giao thông, thương mại, ban đêm).<br><br>
+        ⚠️ <b>Điểm bất hợp lý (Underreporting):</b> Án mạng/bạo hành đối với phụ nữ và trẻ em (đặc biệt là bạo lực gia đình, quấy rối) có tỷ lệ "chìm" (không báo cáo) cực kỳ lớn do rào cản tôn giáo, danh dự gia đình, và sự thiếu hỗ trợ của xã hội.
     </div>
     """, unsafe_allow_html=True)
 
@@ -330,9 +329,9 @@ def create_case_outcome_dashboard():
 
     st.markdown(f"""
     <div class="story-insight">
-        📌 <b>Insight:</b> Loại tội khó phá nhất là <b>"{hardest}"</b> với tỷ lệ chưa phá án lên đến
-        <b>{crime_undetect_rate.iloc[0]:.1f}%</b>. Ngược lại, <b>"{easiest}"</b> có tỷ lệ phá án cao nhất.
-        Điều này giúp cơ quan chức năng biết cần đầu tư nguồn lực điều tra vào đâu.
+        📌 <b>Insight:</b> Tội khó phá nhất là <b>"{hardest}"</b> (chưa phá: <b>{crime_undetect_rate.iloc[0]:.1f}%</b>), dễ phá nhất là <b>"{easiest}"</b>.<br><br>
+        🤔 <b>Vì sao?</b> Những tội liên quan đến mạng (Cybercrime) hoặc trộm cắp danh tính thường bế tắc vì hung thủ ẩn danh và ở địa giới khác. Trong khi án đường phố dễ phá hơn nhờ nhân chứng và camera CCTV.<br><br>
+        ⚠️ <b>Điểm bất hợp lý:</b> Tỷ lệ phá án thần tốc ở một số loại án (như Tàng trữ ma túy/Vũ khí) đơn giản vì chúng là loại "án bắt quả tang" (Victimless Crimes), cứ bắt là xong án, làm phồng tỷ lệ phá án chung che đậy sự yếu kém ở các trọng án.
     </div>
     """, unsafe_allow_html=True)
 
@@ -370,10 +369,9 @@ def create_case_outcome_dashboard():
 
     st.markdown(f"""
     <div class="story-insight">
-        📌 <b>Insight:</b> Hình thức phát hiện tội phạm phổ biến nhất là <b>"{top_mode}"</b>
-        ({mode_counts.iloc[0]:,} vụ, chiếm {mode_counts.iloc[0]/total*100:.1f}%).
-        Đây là thông tin hữu ích để đánh giá hiệu quả tuần tra chủ động của cảnh sát
-        so với tố giác từ dân.
+        📌 <b>Insight:</b> Phát hiện chủ yếu qua <b>"{top_mode}"</b> ({mode_counts.iloc[0]:,} vụ, {mode_counts.iloc[0]/total*100:.1f}%).<br><br>
+        🤔 <b>Vì sao?</b> Ở quốc gia đông dân, việc nạn nhân chủ động tới đồn viết đơn tố giác (Written/Oral complaint) vẫn là kênh chính, khả năng tuần tra phòng ngừa tự giác (Proactive policing) của cảnh sát bị giới hạn nghiêm trọng do nhân sự mỏng.<br><br>
+        ⚠️ <b>Điểm bất hợp lý:</b> Các hình thức báo cáo phi truyền thống (tin nhắn, app di động, email) vắng bóng hoặc siêu nhỏ, chứng tỏ mức độ bao phủ và lòng tin vào dịch vụ hành chính công điện tử (e-gov) ở mảng tư pháp vẫn rất hạn chế ở cấp cơ sở.
     </div>
     """, unsafe_allow_html=True)
 
