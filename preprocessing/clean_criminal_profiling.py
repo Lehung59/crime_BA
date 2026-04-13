@@ -1,0 +1,19 @@
+import pandas as pd
+import os
+
+def clean_Criminal_Profiling(Criminal_Profiling):
+
+    features = ['Occupation', 'PresentCity', 'ActSection', 'Crime_Group1', 'Crime_Head2',  'Rowdy_Classification_Details', 'Activities_Description', 'PrevCase_Details', 'Caste' ]
+    Criminal_Profiling[features] = Criminal_Profiling[features].fillna('unknown')
+
+    Criminal_Profiling = Criminal_Profiling[['Occupation', 
+       'Crime_Group1', 'Crime_Head2','age',
+       'Caste', 'Sex']]
+
+
+    output_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'processed', 'Criminal_Profiling_cleaned.csv')
+    Criminal_Profiling.to_csv(output_path)
+
+
+
+

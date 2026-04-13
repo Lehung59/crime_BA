@@ -1,4 +1,4 @@
-import streamlit as st
+﻿import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -33,7 +33,7 @@ crime_palette = ['#1b9aaa', '#06d6a0', '#f4a261', '#e63946', '#577590',
 # ======================================================================
 @st.cache_data(show_spinner="⏳ Đang tải dữ liệu Case Outcome lần đầu...")
 def load_case_outcome_data():
-    data_path = os.path.join(root_dir, 'Component_datasets', 'Case_Outcome_Cleaned.csv')
+    data_path = os.path.join(root_dir, 'data', 'processed', 'Case_Outcome_Cleaned.csv')
     return pd.read_csv(data_path)
 
 
@@ -214,7 +214,7 @@ def create_case_outcome_dashboard():
         yaxis=dict(title='Số vụ án', gridcolor=COLOR_GRID, showgrid=True),
         legend=dict(orientation='h', yanchor='bottom', y=-0.35, xanchor='center', x=0.5, font=dict(size=11)),
         height=500, bargap=0.2)
-    st.plotly_chart(fig_dist, use_container_width=True)
+    st.plotly_chart(fig_dist, width='stretch')
 
     st.markdown("---")
 
@@ -251,7 +251,7 @@ def create_case_outcome_dashboard():
         yaxis=dict(title='Số vụ', gridcolor=COLOR_GRID, showgrid=True),
         legend=dict(orientation='h', yanchor='bottom', y=-0.2, xanchor='center', x=0.5),
         height=420)
-    st.plotly_chart(fig_heinous, use_container_width=True)
+    st.plotly_chart(fig_heinous, width='stretch')
 
     fig_hd = go.Figure(data=[go.Bar(
         x=heinous_dist.values, y=heinous_dist.index, orientation='h',
@@ -263,7 +263,7 @@ def create_case_outcome_dashboard():
         title=dict(text='Top 15 Quận có Tội phạm Nghiêm trọng nhiều nhất', font=dict(size=17, color='#1b2838')),
         xaxis=dict(title='Số vụ', gridcolor=COLOR_GRID, showgrid=True),
         yaxis=dict(title=''), height=480, bargap=0.2)
-    st.plotly_chart(fig_hd, use_container_width=True)
+    st.plotly_chart(fig_hd, width='stretch')
 
     st.markdown("---")
 
@@ -298,7 +298,7 @@ def create_case_outcome_dashboard():
             yaxis=dict(title=''),
             legend=dict(orientation='h', yanchor='bottom', y=-0.25, xanchor='center', x=0.5),
             height=480, bargap=0.2)
-        st.plotly_chart(fig_victim, use_container_width=True)
+        st.plotly_chart(fig_victim, width='stretch')
 
     with tabs[1]:
         fig_donut = go.Figure(data=[go.Pie(
@@ -314,7 +314,7 @@ def create_case_outcome_dashboard():
             height=420,
             annotations=[dict(text=f'{total_victims:,}<br>Nạn nhân', x=0.5, y=0.5,
                               font_size=16, showarrow=False, font_color='#1b2838')])
-        st.plotly_chart(fig_donut, use_container_width=True)
+        st.plotly_chart(fig_donut, width='stretch')
 
     st.markdown("---")
 
@@ -355,7 +355,7 @@ def create_case_outcome_dashboard():
         yaxis=dict(title='Tỷ lệ (%)', gridcolor=COLOR_GRID, showgrid=True),
         legend=dict(orientation='h', yanchor='bottom', y=-0.35, xanchor='center', x=0.5),
         height=500, bargap=0.15)
-    st.plotly_chart(fig_rate, use_container_width=True)
+    st.plotly_chart(fig_rate, width='stretch')
 
     st.markdown("---")
 
@@ -387,7 +387,7 @@ def create_case_outcome_dashboard():
         xaxis=dict(title='Hình thức', gridcolor=COLOR_GRID),
         yaxis=dict(title='Số vụ', gridcolor=COLOR_GRID, showgrid=True),
         height=420, bargap=0.3)
-    st.plotly_chart(fig_mode, use_container_width=True)
+    st.plotly_chart(fig_mode, width='stretch')
 
     st.markdown("---")
 

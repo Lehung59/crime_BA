@@ -14,51 +14,58 @@ Hệ thống phân tích tội phạm đô thị dựa trên dữ liệu thực 
 
 ## 2. Cài đặt & Chạy ứng dụng
 
+### 2.1. Cài đặt môi trường
+Dự án yêu cầu **Python 3.11**. Việc sử dụng các phiên bản cao hơn (3.12+) có thể gây lỗi tương thích với một số thư viện trực quan hóa.
+
 ```powershell
-# Bước 1: Tạo môi trường ảo
-python -m venv venv311
+# 1. Tạo môi trường ảo
+python -m venv venv
 
-# Bước 2: Kích hoạt
-.\venv311\Scripts\activate          # Windows
-# source venv311/bin/activate       # macOS/Linux
+# 2. Kích hoạt môi trường (Windows)
+.\venv\Scripts\activate
 
-# Bước 3: Cài thư viện
+# 3. Cài đặt các thư viện cần thiết
 pip install -r requirements.txt
-
-# Bước 4: Chạy dashboard
-cd app
-python -m streamlit run app.py
 ```
 
-Ứng dụng mở tại `http://localhost:8501`.
+### 2.2. Khởi chạy Dashboard
+Dashboard đã được cấu hình để đọc dữ liệu đã xử lý sẵn trong thư mục `data/processed/`.
+
+```powershell
+# Chạy dashboard từ thư mục gốc của dự án
+streamlit run app/app.py
+```
+Ứng dụng sẽ khả dụng tại địa chỉ: `http://localhost:8501`.
+
+### 2.3. Chạy Pipeline xử lý dữ liệu (ETL)
+Nếu bạn cập nhật dữ liệu mới trong `data/raw/` hoặc muốn phân tích sâu hơn:
+
+```powershell
+# Chạy quy trình Tiền xử lý dữ liệu & Phân tích
+python pipelines/data_processing_pipeline.py
+```
 
 ---
 
 ## 3. Cấu trúc dự án
 
 ```
-Predictive_Guardians-main/
-├── app/                          # Streamlit UI — từng file = 1 module dashboard
-│   ├── app.py                    # Entry point + routing
-│   ├── Crime_Pattern_Analysis.py # Module 1: Phân tích hình mẫu
-│   ├── Criminal_Profiling.py     # Module 2: Hồ sơ tội phạm
-│   ├── Case_Outcome_Monitoring.py# Module 3: Theo dõi kết quả xử lý
-│   └── Resource_Allocation.py    # Module 4: Phân bổ nguồn lực
+├── app/                          # Streamlit UI (Phần giao diện)
+├── docs/                         # Trung tâm tài liệu (Obsidian Vault)
+│   ├── 00 - Home.md              # Trang chủ tài liệu
+│   ├── 02 - Metadata Dataset.md  # Giải thích dữ liệu chi tiết
+│   └── ...
+├── data/                         # Trung tâm quản lý dữ liệu
+│   ├── raw/                      # Dữ liệu gốc (FIR_Details_Data.csv, v.v.)
+│   └── processed/                # Dữ liệu đã làm sạch (CSV) — dashboard đọc từ đây
 │
-├── Component_datasets/           # Dữ liệu đã cleaning (CSV) — dashboard đọc từ đây
-│   ├── Crime_Pattern_Analysis_Cleaned.csv
-│   ├── Criminal_Profiling_cleaned.csv
-│   ├── Case_Outcome_Cleaned.csv
-│   └── Resource_Allocation_Cleaned.csv
+├── ingestion/                    # Giai đoạn 1: Ingest dữ liệu thô
+├── preprocessing/                # Giai đoạn 2: Cleaning & Feature Engineering
+├── documentation/                # (Nếu có) Tài liệu báo cáo chi tiết
+├── optimization/                 # Giai đoạn 4: Logic tối ưu hóa nguồn lực (Resource Allocation)
 │
-├── archive/                      # Dữ liệu gốc thô
-│   └── FIR_Details_Data.csv      # 1.67 triệu dòng, 34 cột — nguồn chính
-│
-├── Crime_Pattern_Analysis/       # Script ingest + clean cho Module 1
-├── Criminal_Profiling/           # Script ingest + clean cho Module 2
-├── Case_Outcome_Monitoring/      # Script ingest + clean cho Module 3
-├── Resource_Allocation/          # Script ingest + clean cho Module 4
-│
+├── models/                       # Lưu trữ các file mô hình đã huấn luyện (.pkl, .mojo)
+├── pipelines/                    # Pipeline tự động hóa training
 ├── Data_Dictionary_VN.md         # Giải thích thuật ngữ bằng tiếng Việt
 └── Readme.md                     # File này
 ```
@@ -157,4 +164,4 @@ Ngoài ra, module Criminal Profiling kết hợp thêm 3 bộ dữ liệu phụ:
 
 ## 5. Tham khảo thêm
 
-- `Data_Dictionary_VN.md` — Giải thích chi tiết hệ thống đẳng cấp Ấn Độ, nghề nghiệp, nhóm tội phạm bằng tiếng Việt.
+- `docs/02 - Metadata Dataset.md` — Giải thích chi tiết hệ thống đẳng cấp Ấn Độ, nghề nghiệp, nhóm tội phạm bằng tiếng Việt.
