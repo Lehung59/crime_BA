@@ -6,18 +6,12 @@ __pycache__/
 .ipynb_checkpoints/
 .DS_Store
 
-# Datasets -- khong dua len git (file qua lon)
+# Datasets
 dataset/
 datasets/
 data/
 Component_datasets/
 archive/
-
-# Models
-models/Recidivism_model/*.zip
-models/Recidivism_model/*.pkl
-models/Recidivism_model/*.json
-models/Recidivism_model/*.jar
 
 # Misc
 issue/
