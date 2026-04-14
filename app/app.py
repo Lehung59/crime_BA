@@ -14,6 +14,7 @@ from Criminal_Profiling import create_criminal_profiling_dashboard
 from Crime_Pattern_Analysis import *
 from Case_Outcome_Monitoring import create_case_outcome_dashboard
 from Resource_Allocation import *
+from Resource_Allocation_V2 import resource_allocation_v2
 from Advanced_Analytics import advanced_analytics
 import os
 
@@ -67,8 +68,8 @@ st.markdown("""
 
 with st.sidebar:
     selected = option_menu("Predictive Guardians",
-        ['Phân tích Hình mẫu Tội phạm', 'Hồ sơ Tội phạm', 'Theo dõi Kết quả Xử lý', 'Phân bổ Nguồn lực Cảnh sát', 'Phân tích Nâng cao'],
-        icons=['bar-chart-fill', 'fingerprint', 'clipboard-data-fill', 'diagram-3-fill', 'cpu-fill'],
+        ['Phân tích Hình mẫu Tội phạm', 'Hồ sơ Tội phạm', 'Theo dõi Kết quả Xử lý', 'Phân bổ Nguồn lực Cảnh sát', 'Phân bổ Nguồn lực V2', 'Phân tích Nâng cao'],
+        icons=['bar-chart-fill', 'fingerprint', 'clipboard-data-fill', 'diagram-3-fill', 'diagram-3', 'cpu-fill'],
         menu_icon="shield-shaded", default_index=0, orientation="vertical",
         styles={
         "container": {"padding": "5!important", "background-color": "#1c1e21"},
@@ -149,6 +150,11 @@ elif selected == "Theo dõi Kết quả Xử lý":
 elif selected == "Phân bổ Nguồn lực Cảnh sát":
     df = load_resource_data()
     resource_allocation(df)
+
+elif selected == "Phân bổ Nguồn lực V2":
+    df = load_resource_data()
+    _, _, _, crime_pattern_analysis = load_crime_pattern_data()
+    resource_allocation_v2(df, crime_pattern_analysis)
 
 elif selected == "Phân tích Nâng cao":
     advanced_analytics()
