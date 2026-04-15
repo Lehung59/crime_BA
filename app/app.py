@@ -65,9 +65,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 with st.sidebar:
-    selected = option_menu("Predictive Guardians",
-        ['Phân tích Hình mẫu Tội phạm', 'Hồ sơ Tội phạm', 'Theo dõi Kết quả Xử lý', 'Phân bổ Nguồn lực Cảnh sát'],
-        icons=['bar-chart-fill', 'fingerprint', 'clipboard-data-fill', 'diagram-3-fill'],
+    selected = option_menu("Crime Intelligence",
+        ['Tổng quan Tình hình Tội phạm', 'Hiệu quả Xử lý Vụ án', 'Đặc điểm Đối tượng Vi phạm', 'Kịch bản Phân bổ Nguồn lực'],
+        icons=['bar-chart-fill', 'clipboard-data-fill', 'fingerprint', 'diagram-3-fill'],
         menu_icon="shield-shaded", default_index=0, orientation="vertical",
         styles={
         "container": {"padding": "5!important", "background-color": "#1c1e21"},
@@ -115,13 +115,13 @@ def load_resource_data():
 
 # ============ PAGE ROUTING ============
 
-if selected == "Phân tích Hình mẫu Tội phạm":
+if selected == "Tổng quan Tình hình Tội phạm":
     mean_lat, mean_lon, geojson_data, crime_pattern_analysis = load_crime_pattern_data()
 
-    st.title("Phân tích Hình mẫu Tội phạm")
+    st.title("Tổng quan Tình hình Tội phạm")
     st.markdown("---")
 
-    st.subheader("Phân tích theo Thời gian")
+    st.subheader("Xu hướng Tội phạm theo Thời gian")
     temporal_analysis(crime_pattern_analysis)
 
     st.markdown("---")
@@ -131,19 +131,19 @@ if selected == "Phân tích Hình mẫu Tội phạm":
 
     st.markdown("---")
 
-    st.subheader("Bản đồ Điểm nóng Tội phạm (Heatmap + DBSCAN)")
+    st.subheader("Điểm nóng Tội phạm theo Không gian")
     crime_pattern_analysis = crime_pattern_analysis.reset_index(drop=True)
     mean_lat_sampled = crime_pattern_analysis['Latitude'].mean()
     mean_lon_sampled = crime_pattern_analysis['Longitude'].mean()
     crime_pattern_analysis['Date'] = pd.to_datetime(crime_pattern_analysis[['Year', 'Month', 'Day']])
     crime_hotspots(crime_pattern_analysis, mean_lat_sampled, mean_lon_sampled)
 
-elif selected == "Hồ sơ Tội phạm":
-    create_criminal_profiling_dashboard()
-
-elif selected == "Theo dõi Kết quả Xử lý":
+elif selected == "Hiệu quả Xử lý Vụ án":
     create_case_outcome_dashboard()
 
-elif selected == "Phân bổ Nguồn lực Cảnh sát":
+elif selected == "Đặc điểm Đối tượng Vi phạm":
+    create_criminal_profiling_dashboard()
+
+elif selected == "Kịch bản Phân bổ Nguồn lực":
     df = load_resource_data()
     resource_allocation(df)

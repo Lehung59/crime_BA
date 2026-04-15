@@ -207,7 +207,7 @@ def create_criminal_profiling_dashboard():
     </style>
     """, unsafe_allow_html=True)
 
-    st.title("Criminal Profiling — Data Story")
+    st.title("Đặc điểm Đối tượng Vi phạm")
     st.markdown("> *Phân tích đặc điểm nhân khẩu học của đối tượng phạm tội tại Karnataka, Ấn Độ — "
                 "dựa trên dữ liệu từ Cảnh sát Bang Karnataka (KSP).*")
     
@@ -719,7 +719,7 @@ def create_criminal_profiling_dashboard():
     # ======================================================================
     st.markdown("### Kết luận & Khuyến nghị")
     st.markdown(f"""
-    Từ **{total_records:,}** hồ sơ trong module Criminal Profiling, có thể rút ra một số điểm chính:
+    Từ **{total_records:,}** hồ sơ trong phân hệ phân tích đối tượng vi phạm, có thể rút ra một số điểm chính:
 
     1. **Cấu trúc hồ sơ tập trung vào nhóm trẻ và trung niên trẻ**: dữ liệu nghiêng mạnh về nhóm dưới 35 tuổi ({young_pct:.0f}%), cho thấy đây là cụm đối tượng cần được theo dõi kỹ trong các bối cảnh xung đột, đường phố và tái phạm.
     2. **Chênh lệch giới tính rất lớn trong dữ liệu ghi nhận**: **{dominant_pct:.0f}%** hồ sơ thuộc về **{dominant_gender}**, nhưng đây nên được hiểu là mẫu hình của hồ sơ đã ghi nhận, không phải kết luận tuyệt đối cho toàn bộ hành vi phạm tội ngoài thực tế.

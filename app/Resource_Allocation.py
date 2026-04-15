@@ -257,7 +257,7 @@ def optimise_resource_allocation(district_df, sanctioned_asi, sanctioned_chc, sa
             <= max(1, sanctioned_cpc * district_df.loc[i, "Normalised Crime Severity"])
         )
 
-    with st.spinner("Đang tính toán phân bổ tối ưu bằng Linear Programming..."):
+    with st.spinner("Đang tính toán kịch bản phân bổ nguồn lực..."):
         problem.solve()
 
     district_df = district_df.copy()
@@ -356,11 +356,12 @@ def allocate_resources(option, district_df, updated_asi, updated_chc, updated_cp
 # HÀM CHÍNH
 # ======================================================================
 def resource_allocation(df):
-    st.title("Phân bổ và Quản lý Nguồn lực Cảnh sát")
+    st.title("Kịch bản Phân bổ Nguồn lực Cảnh sát")
     st.markdown(
-        "Tối ưu hóa phân bổ ASI, CHC, CPC đến từng tuyến tuần tra "
-        "bằng thuật toán Linear Programming (PuLP)."
+        "So sánh và đề xuất phương án phân bổ ASI, CHC, CPC đến từng tuyến tuần tra "
+        "dựa trên mức độ rủi ro và nhu cầu tuần tra thực địa."
     )
+    st.caption("Thuật toán tối ưu hóa tuyến tính (PuLP) được dùng như công cụ hỗ trợ ra quyết định ở phía sau.")
 
     st.markdown("---")
 
