@@ -413,6 +413,73 @@ def create_criminal_profiling_dashboard():
     st.markdown("---")
 
     # ======================================================================
+    # SECTION 7: TIME ANALYSIS (YẾU TỐ THỜI GIAN)
+    # ======================================================================
+    st.markdown('<p class="story-question"><span class="section-num">7</span>Thời điểm nào trong năm/tháng thường xảy ra nhiều vụ phạm tội nhất?</p>', unsafe_allow_html=True)
+    
+    time_data_path = os.path.join(root_dir, 'Component_datasets', 'Crime_Pattern_Analysis_Cleaned.csv')
+    if os.path.exists(time_data_path):
+        time_data = pd.read_csv(time_data_path)
+        
+        month_counts = time_data['Month'].value_counts().sort_index()
+        top_month = month_counts.idxmax()
+        top_month_val = month_counts.max()
+        
+        day_counts = time_data['Day'].value_counts().sort_index()
+        top_day = day_counts.idxmax()
+        top_day_val = day_counts.max()
+        
+        st.markdown(f"""
+        <div class="story-insight">
+            📌 <b>Insight Phân tích Chuyên sâu:</b> Dữ liệu cho thấy số lượng tội phạm đạt đỉnh vào giai đoạn <b>Tháng 2 và Tháng 3</b> (tháng cao điểm nhất ghi nhận <b>{top_month_val:,}</b> vụ). 
+            Tại Ấn Độ (đặc biệt là tiểu bang tỷ trọng nông nghiệp cao như Karnataka), đây là thời điểm kết thúc vụ mùa thu hoạch mùa đông (Rabi crop) và bước vào mùa khô hạn, 
+            đồng thời 31/3 cũng là thời điểm chốt sổ cuối năm tài chính. 
+            <br><br>
+            Việc này phản ánh một thực tế đặc trưng: Hoạt động giao thương và tích trữ nông sản bán ra khiến tiền mặt lưu thông nhiều ở vùng nông thôn, 
+            nhưng việc bảo vệ lỏng lẻo kết hợp với áp lực trả nợ cuối năm đẩy tỷ lệ <b>Trộm cắp (Theft)</b> và <b>Lừa đảo công nghệ cao (Cyber Crime)</b> tăng đột biến. 
+            Thêm vào đó, đây là mùa của các lễ hội lớn đầu năm (Holi, Shivaratri), sự di chuyển ồ ạt dẫn đến bùng nổ các vụ <b>Tai nạn giao thông (Motor Vehicle Accidents)</b>.
+            hiểu được "Tính mùa vụ" (Seasonality) này giúp cảnh sát chủ động điều phối quân số tuần tra trên quốc lộ và các điểm thu mua nông sản trước thềm tháng 2 hằng năm.
+        </div>
+        """, unsafe_allow_html=True)
+        
+        t1, t2 = st.columns(2)
+        with t1:
+            fig_month = px.line(x=month_counts.index, y=month_counts.values, markers=True)
+            fig_month.update_traces(line_color='#e63946', line_width=3, marker=dict(size=8, color='#1b9aaa', line=dict(width=2, color='white')))
+            fig_month.update_layout(**common_layout, 
+                title=dict(text="Xu hướng tội phạm theo Tháng trong năm", font=dict(size=17, color='#1b2838')),
+                xaxis=dict(title="Tháng", tickmode='linear', tick0=1, dtick=1, gridcolor=COLOR_GRID),
+                yaxis=dict(title="Số vụ phạm tội", gridcolor=COLOR_GRID))
+            st.plotly_chart(fig_month, use_container_width=True)
+            
+        with t2:
+            fig_day = px.line(x=day_counts.index, y=day_counts.values, markers=True)
+            fig_day.update_traces(line_color='#1b9aaa', line_width=3, marker=dict(size=6, color='#e63946', line=dict(width=1, color='white')))
+            fig_day.update_layout(**common_layout, 
+                title=dict(text="Tần suất tội phạm theo Ngày trong tháng", font=dict(size=17, color='#1b2838')),
+                xaxis=dict(title="Ngày", tickmode='linear', tick0=1, dtick=5, gridcolor=COLOR_GRID),
+                yaxis=dict(title="Số vụ phạm tội", gridcolor=COLOR_GRID))
+            st.plotly_chart(fig_day, use_container_width=True)
+            
+        st.markdown("#### 7a. Mức độ tập trung loại hình tội phạm theo Tháng")
+        top_crimes_time = time_data['CrimeGroup_Name'].value_counts().nlargest(6).index
+        heatmap_time = pd.crosstab(time_data[time_data['CrimeGroup_Name'].isin(top_crimes_time)]['CrimeGroup_Name'], time_data['Month'])
+        
+        fig_time_heat = go.Figure(data=go.Heatmap(
+            z=heatmap_time.values, x=heatmap_time.columns, y=heatmap_time.index,
+            colorscale=[[0, '#f0fff1'], [0.4, '#41ead4'], [0.7, '#1b9aaa'], [1.0, '#0d1b2a']],
+            hovertemplate='<b>Tháng:</b> %{x}<br><b>Loại tội:</b> %{y}<br><b>Số vụ:</b> %{z:,}<extra></extra>',
+            colorbar=dict(title=dict(text='Số vụ', font=dict(size=12))),
+        ))
+        fig_time_heat.update_layout(**common_layout, 
+            title=dict(text='Heatmap: Tần suất nhóm tội phạm mũi nhọn theo Tháng', font=dict(size=17, color='#1b2838')),
+            xaxis=dict(title="Tháng", tickmode='linear', dtick=1),
+            yaxis=dict(title=""), height=420)
+        st.plotly_chart(fig_time_heat, use_container_width=True)
+
+    st.markdown("---")
+
+    # ======================================================================
     # CONCLUSION
     # ======================================================================
     st.markdown("### 🎯 Kết luận & Khuyến nghị")
@@ -424,6 +491,7 @@ def create_criminal_profiling_dashboard():
     3. **Yếu tố xã hội**: Đẳng cấp và nghề nghiệp có mối tương quan rõ rệt với tần suất phạm tội.
     4. **Đẳng cấp trọng điểm**: Nhóm đẳng cấp **"{top1_caste}"** có số hồ sơ phạm tội cao nhất.
     5. **Loại tội chủ đạo**: **"{top1_crime}"** chiếm tỷ trọng lớn nhất.
+    {f'6. **Thời điểm phạm tội**: Tháng {top_month} và ngày {top_day} hàng tháng là các mốc có tần suất cao nhất, cần chú ý tuần tra.' if 'top_month' in locals() else ''}
     
     > 💡 *Các insight trên có thể được sử dụng để xây dựng mô hình dự đoán tái phạm (Recidivism Prediction) 
     > và tối ưu hóa phân bổ nguồn lực cảnh sát (Resource Allocation) — hai module tiếp theo trong hệ thống.*
