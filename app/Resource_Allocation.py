@@ -81,6 +81,11 @@ PATROL_CRIME_WEIGHTS = {
 DISPLAY_UPPERCASE_COLUMNS = ["Village Area Name", "Beat Name"]
 SEVERITY_WEIGHT = 0.7
 VICTIM_WEIGHT = 0.3
+VICTIM_SOURCE_LABEL = "Male+Female+Boy+Girl+Age 0"
+SCORING_METHODS = {
+    "Cách cũ: Chỉ theo mức độ nghiêm trọng": "severity_only",
+    "Có victim: Mức độ nghiêm trọng + tổng số nạn nhân": "severity_with_victims",
+}
 
 
 @st.cache_data(show_spinner=False)
@@ -101,6 +106,7 @@ def load_patrol_reference_data():
         "Patrol Crimes per beat",
         "Patrol Severity per Beat",
         "Total Victims per beat",
+        "Victim Source",
     }
     if os.path.exists(processed_path):
         patrol_df = pd.read_csv(processed_path)
@@ -120,7 +126,11 @@ def load_patrol_reference_data():
         "Village_Area_Name",
         "Beat_Name",
         "CrimeGroup_Name",
-        "VICTIM COUNT",
+        "Male",
+        "Female",
+        "Boy",
+        "Girl",
+        "Age 0",
     ]
     grouped_chunks = []
 
@@ -135,9 +145,11 @@ def load_patrol_reference_data():
         chunk["CrimeGroup_Name"] = (
             chunk["CrimeGroup_Name"].astype(str).str.strip().str.upper()
         )
-        chunk["VICTIM COUNT"] = pd.to_numeric(
-            chunk["VICTIM COUNT"], errors="coerce"
+        victim_cols = ["Male", "Female", "Boy", "Girl", "Age 0"]
+        chunk[victim_cols] = chunk[victim_cols].apply(
+            pd.to_numeric, errors="coerce"
         ).fillna(0)
+        chunk["Victim_Total"] = chunk[victim_cols].sum(axis=1)
         chunk["District Name"] = chunk["District_Name"].map(DISTRICT_MAPPING)
         chunk = chunk[chunk["District Name"].notna()].copy()
         chunk["Patrol Weight"] = chunk["CrimeGroup_Name"].map(PATROL_CRIME_WEIGHTS)
@@ -153,7 +165,7 @@ def load_patrol_reference_data():
             ).agg(
                 Patrol_Crimes=("CrimeGroup_Name", "count"),
                 Patrol_Severity=("Patrol Weight", "sum"),
-                Patrol_Victims=("VICTIM COUNT", "sum"),
+                Patrol_Victims=("Victim_Total", "sum"),
             )
         )
 
@@ -167,6 +179,7 @@ def load_patrol_reference_data():
                 "Patrol Crimes per beat",
                 "Patrol Severity per Beat",
                 "Total Victims per beat",
+                "Victim Source",
             ]
         )
 
@@ -186,11 +199,12 @@ def load_patrol_reference_data():
             "Patrol_Victims": "Total Victims per beat",
         }
     )
+    patrol_df["Victim Source"] = VICTIM_SOURCE_LABEL
     patrol_df.to_csv(processed_path, index=False)
     return patrol_df
 
 
-def prepare_patrol_district_data(df, option):
+def prepare_patrol_district_data(df, option, scoring_mode="severity_only"):
     """Chỉ giữ các beat có tội phạm phù hợp tuần tra thực địa."""
     district_df = df[df["District Name"] == option].copy()
     district_df = district_df.drop(columns=["Total Victims per beat"], errors="ignore")
@@ -231,9 +245,12 @@ def prepare_patrol_district_data(df, option):
     else:
         victim_share = pd.Series(0.0, index=district_df.index)
 
-    district_df["Normalised Crime Severity"] = (
-        SEVERITY_WEIGHT * severity_share + VICTIM_WEIGHT * victim_share
-    )
+    if scoring_mode == "severity_with_victims":
+        district_df["Normalised Crime Severity"] = (
+            SEVERITY_WEIGHT * severity_share + VICTIM_WEIGHT * victim_share
+        )
+    else:
+        district_df["Normalised Crime Severity"] = severity_share
 
     return district_df.drop(columns=["Patrol Severity per Beat"])
 
@@ -308,7 +325,7 @@ def optimise_resource_allocation(district_df, sanctioned_asi, sanctioned_chc, sa
 # ======================================================================
 # HIỂN THỊ KẾT QUẢ
 # ======================================================================
-def allocate_resources(option, district_df, updated_asi, updated_chc, updated_cpc):
+def allocate_resources(option, district_df, updated_asi, updated_chc, updated_cpc, score_label):
     """Chạy tối ưu hóa và hiển thị bảng kết quả."""
     st.markdown(
         f"""
@@ -376,7 +393,7 @@ def allocate_resources(option, district_df, updated_asi, updated_chc, updated_cp
                 "Beat Name": "Tuyến tuần tra",
                 "Total Crimes per beat": "Số vụ đã xảy ra",
                 "Total Victims per beat": "Tổng số nạn nhân",
-                "Normalised Crime Severity": "Mức độ nghiêm trọng tổng hợp",
+                "Normalised Crime Severity": score_label,
                 "Allocated ASI": "ASI phân bổ",
                 "Allocated CHC": "CHC phân bổ",
                 "Allocated CPC": "CPC phân bổ",
@@ -407,7 +424,13 @@ def resource_allocation(df):
     if option == "-- Chọn Quận/Huyện --":
         return
 
-    district_df = prepare_patrol_district_data(df, option)
+    scoring_choice = st.radio(
+        "Chọn cách tính điểm ưu tiên phân bổ",
+        list(SCORING_METHODS.keys()),
+    )
+    scoring_mode = SCORING_METHODS[scoring_choice]
+
+    district_df = prepare_patrol_district_data(df, option, scoring_mode=scoring_mode)
     if district_df.empty:
         st.warning(
             "Không tìm thấy điểm tuần tra thực địa phù hợp trong quận/huyện này "
@@ -425,9 +448,16 @@ def resource_allocation(df):
         "Chỉ giữ các vị trí có tội phạm hiện trường như đánh nhau, gây rối, trộm cắp, cướp, "
         "tai nạn, tệ nạn; loại trừ cyber, gian lận tài chính, giả mạo và các vụ không phù hợp tuần tra."
     )
-    st.caption(
-        "Điểm ưu tiên hiện kết hợp 70% mức độ nghiêm trọng của loại tội và 30% tổng số nạn nhân ghi nhận tại beat."
-    )
+    if scoring_mode == "severity_with_victims":
+        st.caption(
+            "Chế độ hiện tại dùng điểm ưu tiên tổng hợp: 70% mức độ nghiêm trọng của loại tội và 30% tổng số nạn nhân tại beat."
+        )
+        score_label = "Điểm ưu tiên (severity + victim)"
+    else:
+        st.caption(
+            "Chế độ hiện tại dùng cách cũ: chỉ phân bổ theo mức độ nghiêm trọng của loại tội tại beat, chưa tính victim."
+        )
+        score_label = "Điểm ưu tiên (cách cũ)"
 
     default_asi = int(
         district_df[
@@ -483,7 +513,7 @@ def resource_allocation(df):
     if (default or st.session_state.default) and not st.session_state.apply:
         st.session_state.apply = False
         st.session_state.default = True
-        allocate_resources(option, district_df, default_asi, default_chc, default_cpc)
+        allocate_resources(option, district_df, default_asi, default_chc, default_cpc, score_label)
 
     if (apply or st.session_state.apply) and not st.session_state.default:
         st.session_state.default = False
@@ -494,4 +524,5 @@ def resource_allocation(df):
             sanctioned_asi,
             sanctioned_chc,
             sanctioned_cpc,
+            score_label,
         )
