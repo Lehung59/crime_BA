@@ -3,58 +3,36 @@ import pandas as pd
 import os
 
 
+def load_sanctioned_strength_data():
+    data_path = os.path.join(
+        os.path.dirname(__file__),
+        '..',
+        'data',
+        'raw',
+        'police_sanction_strength.csv'
+    )
+    sanctioned_df = pd.read_csv(data_path)
+
+    required_columns = ['District Name', 'ASI', 'CHC', 'CPC']
+    missing_columns = set(required_columns) - set(sanctioned_df.columns)
+    if missing_columns:
+        raise ValueError(
+            f"Thiếu cột trong police_sanction_strength.csv: {sorted(missing_columns)}"
+        )
+
+    sanctioned_df = sanctioned_df[required_columns].copy()
+    sanctioned_df['District Name'] = sanctioned_df['District Name'].astype(str).str.strip()
+    sanctioned_df[['ASI', 'CHC', 'CPC']] = sanctioned_df[['ASI', 'CHC', 'CPC']].apply(
+        pd.to_numeric, errors='raise'
+    )
+
+    return sanctioned_df
+
+
 def clean_resource_data(df):
     df["Total Crimes per beat"] = df.groupby(["District_Name", "UnitName", "Village_Area_Name", "Beat_Name"])["FIRNo"].transform("count")
 
     df = df[(df["District_Name"]!= "CID") & (df["District_Name"]!= "ISD Bengaluru") & (df["District_Name"]!= "Coastal Security Police")]
-
-    sanction_strength = {
-    "COP, BANGALORE CITY": {"ASI": 1558, "CHC": 4650, "CPC": 9432},
-    "COP, MYSORE CITY": {"ASI": 198, "CHC": 592, "CPC": 1159},
-    "COP, HUBLI-DHARWAD CITY": {"ASI": 190, "CHC": 462, "CPC": 958},
-    "COP, MANGALORE CITY": {"ASI": 131, "CHC": 375, "CPC": 801},
-    "COP, BELGAUM CITY": {"ASI": 114, "CHC": 320, "CPC": 699},
-    "COP, KALBURGI CITY": {"ASI": 81, "CHC": 223, "CPC": 556},
-    "IGP, C R, BANGALOE": {"ASI": 0, "CHC": 0, "CPC": 0},
-    "SP, BANGALORE": {"ASI": 128, "CHC": 381, "CPC": 743},
-    "SP, TUMKURU": {"ASI": 165, "CHC": 492, "CPC": 957},
-    "SP, KOLAR": {"ASI": 68, "CHC": 199, "CPC": 394},
-    "SP, KGF": {"ASI": 51, "CHC": 146, "CPC": 303},
-    "SP, RAMANAGARA": {"ASI": 103, "CHC": 293, "CPC": 589},
-    "SP, CHICKBALLAPURA": {"ASI": 88, "CHC": 258, "CPC": 529},
-    "IGP, S.R, BANGALOE": {"ASI": 0, "CHC": 0, "CPC": 0},
-    "SP, MYSORE": {"ASI": 112, "CHC": 323, "CPC": 634},
-    "SP, CHAMARAJANAGARA": {"ASI": 91, "CHC": 254, "CPC": 529},
-    "SP, HASSAN": {"ASI": 132, "CHC": 382, "CPC": 749},
-    "SP, KODAGU": {"ASI": 90, "CHC": 241, "CPC": 492},
-    "SP, MANDYA": {"ASI": 135, "CHC": 414, "CPC": 755},
-    "IGP, E.R, DAVANAGERE": {"ASI": 0, "CHC": 0, "CPC": 0},
-    "SP, DAVANGERE": {"ASI": 113, "CHC": 338, "CPC": 644},
-    "SP, SHIVAMOGA": {"ASI": 158, "CHC": 454, "CPC": 915},
-    "SP, CHITRADURGA": {"ASI": 122, "CHC": 364, "CPC": 704},
-    "SP, HAVERI": {"ASI": 98, "CHC": 290, "CPC": 573},
-    "IGP, W.R, MANGALORE": {"ASI": 0, "CHC": 0, "CPC": 0},
-    "SP, DK, MANGALORE": {"ASI": 76, "CHC": 216, "CPC": 470},
-    "SP, UDUPI": {"ASI": 94, "CHC": 276, "CPC": 553},
-    "SP, UK, KARWAR": {"ASI": 149, "CHC": 407, "CPC": 810},
-    "SP, CHICKMAGALURU": {"ASI": 117, "CHC": 349, "CPC": 682},
-    "IGP, N.R , BELGAUM": {"ASI": 0, "CHC": 0, "CPC": 0},
-    "SP, BELGAUM": {"ASI": 149, "CHC": 440, "CPC": 854},
-    "SP, GADAG": {"ASI": 71, "CHC": 210, "CPC": 420},
-    "SP, DHARWAD": {"ASI": 52, "CHC": 141, "CPC": 278},
-    "SP, VIJAYAPURA": {"ASI": 133, "CHC": 413, "CPC": 835},
-    "SP, BAGALKOTE": {"ASI": 111, "CHC": 331, "CPC": 660},
-    "IGP, NER, KALBURGI": {"ASI": 0, "CHC": 0, "CPC": 0},
-    "SP, KALABURGI": {"ASI": 121, "CHC": 376, "CPC": 685},
-    "SP, BIDAR": {"ASI": 148, "CHC": 442, "CPC": 870},
-    "SP, YADAGIRI": {"ASI": 67, "CHC": 201, "CPC": 414},
-    "IGP, BELLARI RANGE": {"ASI": 0, "CHC": 0, "CPC": 0},
-    "SP, RAICHUR": {"ASI": 124, "CHC": 371, "CPC": 728},
-    "SP, KOPPAL": {"ASI": 77, "CHC": 229, "CPC": 447},
-    "SP, BELLARY": {"ASI": 98, "CHC": 286, "CPC": 535},
-    "SP, VIJAYANAGARA": {"ASI": 114, "CHC": 303, "CPC": 598},
-    "SP, RAILWAYS": {"ASI": 86, "CHC": 245, "CPC": 520}
-    }
 
     district_mapping = {
     'Bagalkot': 'SP, BAGALKOTE',
@@ -99,9 +77,9 @@ def clean_resource_data(df):
 
     df["District Name"] =  df["District_Name"].map(district_mapping)
 
-    sanctioned_df = pd.DataFrame(sanction_strength).T
+    sanctioned_df = load_sanctioned_strength_data()
 
-    df = df.merge(sanctioned_df, left_on='District Name', right_index=True, how='left')
+    df = df.merge(sanctioned_df, on='District Name', how='left')
     
     df.drop(columns = ["District_Name", "FIRNo"], inplace = True)
 
