@@ -1,4 +1,4 @@
-import streamlit as st
+﻿import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -6,7 +6,7 @@ import folium
 from folium.plugins import HeatMap
 from sklearn.cluster import DBSCAN
 import numpy as np
-from streamlit_folium import folium_static
+from streamlit_folium import st_folium
 from datetime import datetime
 import branca.colormap as cm
 
@@ -86,7 +86,7 @@ def temporal_analysis(crime_pattern_analysis):
                         font=dict(size=11)),
             bargap=0.2,
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
 
         # Quick stats
         total = data['Count'].sum()
@@ -197,7 +197,7 @@ def crime_hotspots(crime_pattern_analysis, mean_lat, mean_lon):
 
             # Create and display maps
             m = crime_hotspot_analysis(aggregated_data, mean_lat, mean_lon)
-            folium_static(m)
+            st_folium(m, width=900, height=500)
 
         # Explanation
         st.markdown("""
@@ -265,6 +265,6 @@ def chloropleth_maps(df, geojson_data, mean_lat, mean_lon):
         height=550,
         title=dict(font=dict(size=17, color='#1b2838')),
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
     st.caption("Hover chuột lên từng quận để xem chi tiết số liệu. Màu càng đậm = tội phạm càng nhiều.")

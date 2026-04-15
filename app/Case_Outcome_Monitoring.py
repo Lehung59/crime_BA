@@ -1,4 +1,4 @@
-import streamlit as st
+﻿import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -31,16 +31,16 @@ crime_palette = ['#1b9aaa', '#06d6a0', '#f4a261', '#e63946', '#577590',
 # ======================================================================
 # CACHED DATA LOADING — chỉ đọc CSV 1 lần duy nhất
 # ======================================================================
-@st.cache_data(show_spinner="⏳ Đang tải dữ liệu Case Outcome lần đầu...")
+@st.cache_data(show_spinner="Đang tải dữ liệu Case Outcome lần đầu...")
 def load_case_outcome_data():
-    data_path = os.path.join(root_dir, 'Component_datasets', 'Case_Outcome_Cleaned.csv')
+    data_path = os.path.join(root_dir, 'data', 'processed', 'Case_Outcome_Cleaned.csv')
     return pd.read_csv(data_path)
 
 
 # ======================================================================
 # CACHED AGGREGATIONS — tính groupby nặng 1 lần, cache mãi mãi
 # ======================================================================
-@st.cache_data(show_spinner="⏳ Đang tính toán... (chỉ lần đầu, sau đó tức thì)")
+@st.cache_data(show_spinner="Đang tính toán... (chỉ lần đầu, sau đó tức thì)")
 def compute_aggregations(_df):
     """
     Tính tất cả groupby nặng 1 lần và cache lại.
@@ -161,14 +161,14 @@ def create_case_outcome_dashboard():
     # ======================================================================
     # HEADER
     # ======================================================================
-    st.title("📊 Theo dõi & Đánh giá Hiệu quả Xử lý Vụ án")
+    st.title("Theo dõi & Đánh giá Hiệu quả Xử lý Vụ án")
     st.markdown("> *Phân tích tỷ lệ phá án, kết án, và đặc điểm nạn nhân — dựa trên 1.28 triệu hồ sơ FIR thực tế.*")
 
     m1, m2, m3, m4 = st.columns(4)
-    m1.metric("📋 Tổng hồ sơ FIR", f"{total:,}")
-    m2.metric("✅ Kết án", f"{convicted:,}", f"{conv_rate:.1f}%")
-    m3.metric("🔍 Tỷ lệ phá án", f"{detect_rate:.1f}%")
-    m4.metric("⏳ Đang chờ xử", f"{pending:,}")
+    m1.metric("Tổng hồ sơ FIR", f"{total:,}")
+    m2.metric("Kết án", f"{convicted:,}", f"{conv_rate:.1f}%")
+    m3.metric("Tỷ lệ phá án", f"{detect_rate:.1f}%")
+    m4.metric("Đang chờ xử", f"{pending:,}")
 
     st.markdown("---")
 
@@ -180,9 +180,10 @@ def create_case_outcome_dashboard():
 
     st.markdown(f"""
     <div class="story-insight">
-        📌 <b>Insight:</b> Quận có tỷ lệ kết án cao nhất là <b>{best_dist}</b> ({dist_conv_rate.iloc[0]:.1f}%),
-        trong khi quận thấp nhất là <b>{worst_dist}</b> ({dist_conv_rate.iloc[-1]:.1f}%).
-        Sự chênh lệch lớn giữa các quận phản ánh sự khác biệt trong năng lực điều tra và nguồn lực tư pháp.
+        <b>Insight:</b> Quận có tỷ lệ kết án cao nhất là <b>{best_dist}</b> ({dist_conv_rate.iloc[0]:.1f}%), trong khi thấp nhất là <b>{worst_dist}</b> ({dist_conv_rate.iloc[-1]:.1f}%).<br><br>
+        <b>Vì sao?</b> Sự chênh lệch khổng lồ thường do hạ tầng pháp lý (số lượng thẩm phán, tòa án) và chất lượng đào tạo điều tra viên ở các vùng phát triển (như Bengaluru) tốt hơn hẳn các vùng sâu xa.<br><br>
+        <b>Điểm bất hợp lý:</b> Tỷ lệ kết án quá cao (lên tới >90%) ở một số vùng nhỏ có thể là do cơ quan điều tra chỉ khởi tố những vụ án "chắc thắng" (Cherry-picking), và lờ đi (không lập FIR) các vụ án khó để bảo vệ thành tích.<br><br>
+        <b>Gợi ý hành động:</b> Rà soát quy trình lập FIR và chất lượng hồ sơ điều tra ở các quận có tỷ lệ kết án quá cao hoặc quá thấp, sau đó tổ chức hỗ trợ nghiệp vụ theo cụm quận.
     </div>
     """, unsafe_allow_html=True)
 
@@ -214,7 +215,7 @@ def create_case_outcome_dashboard():
         yaxis=dict(title='Số vụ án', gridcolor=COLOR_GRID, showgrid=True),
         legend=dict(orientation='h', yanchor='bottom', y=-0.35, xanchor='center', x=0.5, font=dict(size=11)),
         height=500, bargap=0.2)
-    st.plotly_chart(fig_dist, use_container_width=True)
+    st.plotly_chart(fig_dist, width='stretch')
 
     st.markdown("---")
 
@@ -230,9 +231,10 @@ def create_case_outcome_dashboard():
 
     st.markdown(f"""
     <div class="story-insight">
-        📌 <b>Insight:</b> Tỷ lệ tội phạm nghiêm trọng (Heinous) đang có xu hướng <b>{trend_dir}</b>.
-        Năm gần nhất, tội nghiêm trọng chiếm <b>{heinous_rate.iloc[-1]:.1f}%</b> tổng số vụ.
-        Thông tin này giúp cảnh sát đánh giá liệu tình hình an ninh đang cải thiện hay xấu đi.
+        <b>Insight:</b> Tỷ lệ tội phạm nghiêm trọng (Heinous) đang có xu hướng <b>{trend_dir}</b>, chiếm <b>{heinous_rate.iloc[-1]:.1f}%</b> trong năm gần nhất.<br><br>
+        <b>Vì sao?</b> Nếu xu hướng giảm, có thể do hiệu quả răn đe của luật pháp hoặc kinh tế vĩ mô ổn định. Ngược lại, nếu tăng, thường đi kèm với sự bùng nổ dân số cơ học và bất bình đẳng thu nhập ở các đô thị lõi.<br><br>
+        <b>Điểm bất hợp lý:</b> Quy trình nâng/hạ mức độ án (Downgrading). Khá nhiều vụ án bạo lực nghiêm trọng (Heinous) có thể bị ghi nhận hạ bậc thành xô xát thông thường (Non-Heinous) trong quá trình thương lượng hòa giải để giảm nhẹ án hoặc do tham nhũng.<br><br>
+        <b>Gợi ý hành động:</b> Thiết lập bước kiểm tra chéo các hồ sơ nghiêm trọng bị chuyển nhóm và theo dõi riêng các quận có biến động mạnh về tỷ lệ Heinous qua từng năm.
     </div>
     """, unsafe_allow_html=True)
 
@@ -251,7 +253,7 @@ def create_case_outcome_dashboard():
         yaxis=dict(title='Số vụ', gridcolor=COLOR_GRID, showgrid=True),
         legend=dict(orientation='h', yanchor='bottom', y=-0.2, xanchor='center', x=0.5),
         height=420)
-    st.plotly_chart(fig_heinous, use_container_width=True)
+    st.plotly_chart(fig_heinous, width='stretch')
 
     fig_hd = go.Figure(data=[go.Bar(
         x=heinous_dist.values, y=heinous_dist.index, orientation='h',
@@ -263,7 +265,7 @@ def create_case_outcome_dashboard():
         title=dict(text='Top 15 Quận có Tội phạm Nghiêm trọng nhiều nhất', font=dict(size=17, color='#1b2838')),
         xaxis=dict(title='Số vụ', gridcolor=COLOR_GRID, showgrid=True),
         yaxis=dict(title=''), height=480, bargap=0.2)
-    st.plotly_chart(fig_hd, use_container_width=True)
+    st.plotly_chart(fig_hd, width='stretch')
 
     st.markdown("---")
 
@@ -276,14 +278,14 @@ def create_case_outcome_dashboard():
 
     st.markdown(f"""
     <div class="story-insight">
-        📌 <b>Insight:</b> Trong tổng số <b>{total_victims:,}</b> nạn nhân được ghi nhận:
-        Nam giới chiếm <b>{total_male_v/total_victims*100:.1f}%</b>,
-        Nữ giới chiếm <b>{total_female_v/total_victims*100:.1f}%</b>,
-        và Trẻ em chiếm <b>{total_minor_v/total_victims*100:.1f}%</b>.
+        <b>Insight:</b> Trong <b>{total_victims:,}</b> nạn nhân: Nam chiếm <b>{total_male_v/total_victims*100:.1f}%</b>, Nữ <b>{total_female_v/total_victims*100:.1f}%</b>, Trẻ em <b>{total_minor_v/total_victims*100:.1f}%</b>.<br><br>
+        <b>Vì sao?</b> Nam giới áp đảo cả trong tỷ lệ phạm tội lẫn nạn nhân vì họ là nhóm trực tiếp lao vào các giao dịch rủi ro cao ngoài xã hội (giao thông, thương mại, ban đêm).<br><br>
+        <b>Điểm bất hợp lý (Underreporting):</b> Án mạng/bạo hành đối với phụ nữ và trẻ em (đặc biệt là bạo lực gia đình, quấy rối) có tỷ lệ "chìm" (không báo cáo) cực kỳ lớn do rào cản tôn giáo, danh dự gia đình, và sự thiếu hỗ trợ của xã hội.<br><br>
+        <b>Gợi ý hành động:</b> Ưu tiên bổ sung kênh tiếp nhận an toàn cho phụ nữ và trẻ em, đồng thời theo dõi riêng các nhóm tội có nguy cơ underreporting cao để đánh giá độ lệch dữ liệu.
     </div>
     """, unsafe_allow_html=True)
 
-    tabs = st.tabs(["👨‍👩‍👧‍👦 Theo loại tội", "📊 Tổng quan giới tính"])
+    tabs = st.tabs(["Theo loại tội", "Tổng quan giới tính"])
 
     with tabs[0]:
         fig_victim = go.Figure()
@@ -299,7 +301,7 @@ def create_case_outcome_dashboard():
             yaxis=dict(title=''),
             legend=dict(orientation='h', yanchor='bottom', y=-0.25, xanchor='center', x=0.5),
             height=480, bargap=0.2)
-        st.plotly_chart(fig_victim, use_container_width=True)
+        st.plotly_chart(fig_victim, width='stretch')
 
     with tabs[1]:
         fig_donut = go.Figure(data=[go.Pie(
@@ -315,7 +317,7 @@ def create_case_outcome_dashboard():
             height=420,
             annotations=[dict(text=f'{total_victims:,}<br>Nạn nhân', x=0.5, y=0.5,
                               font_size=16, showarrow=False, font_color='#1b2838')])
-        st.plotly_chart(fig_donut, use_container_width=True)
+        st.plotly_chart(fig_donut, width='stretch')
 
     st.markdown("---")
 
@@ -330,9 +332,10 @@ def create_case_outcome_dashboard():
 
     st.markdown(f"""
     <div class="story-insight">
-        📌 <b>Insight:</b> Loại tội khó phá nhất là <b>"{hardest}"</b> với tỷ lệ chưa phá án lên đến
-        <b>{crime_undetect_rate.iloc[0]:.1f}%</b>. Ngược lại, <b>"{easiest}"</b> có tỷ lệ phá án cao nhất.
-        Điều này giúp cơ quan chức năng biết cần đầu tư nguồn lực điều tra vào đâu.
+        <b>Insight:</b> Tội khó phá nhất là <b>"{hardest}"</b> (chưa phá: <b>{crime_undetect_rate.iloc[0]:.1f}%</b>), dễ phá nhất là <b>"{easiest}"</b>.<br><br>
+        <b>Vì sao?</b> Những tội liên quan đến mạng (Cybercrime) hoặc trộm cắp danh tính thường bế tắc vì hung thủ ẩn danh và ở địa giới khác. Trong khi án đường phố dễ phá hơn nhờ nhân chứng và camera CCTV.<br><br>
+        <b>Điểm bất hợp lý:</b> Tỷ lệ phá án thần tốc ở một số loại án (như Tàng trữ ma túy/Vũ khí) đơn giản vì chúng là loại "án bắt quả tang" (Victimless Crimes), cứ bắt là xong án, làm phồng tỷ lệ phá án chung che đậy sự yếu kém ở các trọng án.<br><br>
+        <b>Gợi ý hành động:</b> Tách riêng chỉ tiêu theo nhóm tội khó phá và nhóm bắt quả tang, rồi bố trí tổ điều tra chuyên biệt cho các nhóm có tỷ lệ undetected cao nhất.
     </div>
     """, unsafe_allow_html=True)
 
@@ -356,7 +359,7 @@ def create_case_outcome_dashboard():
         yaxis=dict(title='Tỷ lệ (%)', gridcolor=COLOR_GRID, showgrid=True),
         legend=dict(orientation='h', yanchor='bottom', y=-0.35, xanchor='center', x=0.5),
         height=500, bargap=0.15)
-    st.plotly_chart(fig_rate, use_container_width=True)
+    st.plotly_chart(fig_rate, width='stretch')
 
     st.markdown("---")
 
@@ -370,10 +373,10 @@ def create_case_outcome_dashboard():
 
     st.markdown(f"""
     <div class="story-insight">
-        📌 <b>Insight:</b> Hình thức phát hiện tội phạm phổ biến nhất là <b>"{top_mode}"</b>
-        ({mode_counts.iloc[0]:,} vụ, chiếm {mode_counts.iloc[0]/total*100:.1f}%).
-        Đây là thông tin hữu ích để đánh giá hiệu quả tuần tra chủ động của cảnh sát
-        so với tố giác từ dân.
+        <b>Insight:</b> Phát hiện chủ yếu qua <b>"{top_mode}"</b> ({mode_counts.iloc[0]:,} vụ, {mode_counts.iloc[0]/total*100:.1f}%).<br><br>
+        <b>Vì sao?</b> Ở quốc gia đông dân, việc nạn nhân chủ động tới đồn viết đơn tố giác (Written/Oral complaint) vẫn là kênh chính, khả năng tuần tra phòng ngừa tự giác (Proactive policing) của cảnh sát bị giới hạn nghiêm trọng do nhân sự mỏng.<br><br>
+        <b>Điểm bất hợp lý:</b> Các hình thức báo cáo phi truyền thống (tin nhắn, app di động, email) vắng bóng hoặc siêu nhỏ, chứng tỏ mức độ bao phủ và lòng tin vào dịch vụ hành chính công điện tử (e-gov) ở mảng tư pháp vẫn rất hạn chế ở cấp cơ sở.<br><br>
+        <b>Gợi ý hành động:</b> Mở rộng kênh tiếp nhận số và theo dõi tỷ trọng từng kênh theo tháng để đánh giá khả năng tiếp cận dịch vụ tiếp nhận tố giác ở cấp cơ sở.
     </div>
     """, unsafe_allow_html=True)
 
@@ -389,14 +392,14 @@ def create_case_outcome_dashboard():
         xaxis=dict(title='Hình thức', gridcolor=COLOR_GRID),
         yaxis=dict(title='Số vụ', gridcolor=COLOR_GRID, showgrid=True),
         height=420, bargap=0.3)
-    st.plotly_chart(fig_mode, use_container_width=True)
+    st.plotly_chart(fig_mode, width='stretch')
 
     st.markdown("---")
 
     # ======================================================================
     # CONCLUSION
     # ======================================================================
-    st.markdown("### 🎯 Kết luận & Khuyến nghị")
+    st.markdown("### Kết luận & Khuyến nghị")
     st.markdown(f"""
     Từ phân tích **{total:,}** hồ sơ FIR tại Karnataka:
 
@@ -406,7 +409,7 @@ def create_case_outcome_dashboard():
     4. **Loại tội khó phá nhất:** "{hardest}" — cần tăng cường đội ngũ điều tra chuyên biệt.
     5. **Phương thức phát hiện:** Đa số vụ án qua hình thức "{top_mode}".
 
-    > 💡 *Module này bổ sung góc nhìn "hậu phạm tội" — giúp đánh giá hiệu quả hệ thống tư pháp,
+    > *Module này bổ sung góc nhìn "hậu phạm tội" — giúp đánh giá hiệu quả hệ thống tư pháp,
     > kết hợp với Crime Pattern (phát hiện) và Resource Allocation (phân bổ) để tạo vòng phản hồi hoàn chỉnh.*
     """)
 

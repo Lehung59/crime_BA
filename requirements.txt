@@ -10,7 +10,6 @@ scikit-learn
 matplotlib
 seaborn
 category_encoders
-h2o
 pulp
 imblearn
 joblib

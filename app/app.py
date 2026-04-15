@@ -7,13 +7,9 @@ import folium
 from folium import plugins
 from sklearn.cluster import DBSCAN
 import numpy as np
-import requests
-import plotly.io as pio
-import streamlit.components.v1 as components
 import matplotlib.pyplot as plt
 import seaborn as sns
-from streamlit_folium import folium_static
-import pickle
+from streamlit_folium import st_folium
 from Criminal_Profiling import create_criminal_profiling_dashboard
 from Crime_Pattern_Analysis import *
 from Case_Outcome_Monitoring import create_case_outcome_dashboard
@@ -70,8 +66,8 @@ st.markdown("""
 
 with st.sidebar:
     selected = option_menu("Predictive Guardians",
-        ['Phân tích Hình mẫu Tội phạm', 'Hồ sơ Tội phạm', 'Phân bổ Nguồn lực Cảnh sát'],
-        icons=['bar-chart-fill', 'fingerprint', 'diagram-3-fill'],
+        ['Phân tích Hình mẫu Tội phạm', 'Hồ sơ Tội phạm', 'Theo dõi Kết quả Xử lý', 'Phân bổ Nguồn lực Cảnh sát'],
+        icons=['bar-chart-fill', 'fingerprint', 'clipboard-data-fill', 'diagram-3-fill'],
         menu_icon="shield-shaded", default_index=0, orientation="vertical",
         styles={
         "container": {"padding": "5!important", "background-color": "#1c1e21"},
@@ -97,13 +93,15 @@ with st.sidebar:
     )
 
 
+import json
+
 # Cache data loading functions at module level
 @st.cache_data
 def load_crime_pattern_data():
-    url = "https://raw.githubusercontent.com/adarshbiradar/maps-geojson/master/states/karnataka.json"
-    response = requests.get(url)
-    geojson_data = response.json()
-    data_file_path = os.path.join(root_dir, 'Component_datasets', 'Crime_Pattern_Analysis_Cleaned.csv')
+    geojson_path = os.path.join(root_dir, 'data', 'raw', 'karnataka.json')
+    with open(geojson_path, 'r', encoding='utf-8') as f:
+        geojson_data = json.load(f)
+    data_file_path = os.path.join(root_dir, 'data', 'processed', 'Crime_Pattern_Analysis_Cleaned.csv')
     crime_pattern_analysis = pd.read_csv(data_file_path)
     mean_lat = crime_pattern_analysis['Latitude'].mean()
     mean_lon = crime_pattern_analysis['Longitude'].mean()
@@ -111,7 +109,7 @@ def load_crime_pattern_data():
 
 @st.cache_data
 def load_resource_data():
-    data_file_path = os.path.join(root_dir, 'Component_datasets', 'Resource_Allocation_Cleaned.csv')
+    data_file_path = os.path.join(root_dir, 'data', 'processed', 'Resource_Allocation_Cleaned.csv')
     return pd.read_csv(data_file_path)
 
 
@@ -143,6 +141,9 @@ if selected == "Phân tích Hình mẫu Tội phạm":
 
 elif selected == "Hồ sơ Tội phạm":
     create_criminal_profiling_dashboard()
+
+elif selected == "Theo dõi Kết quả Xử lý":
+    create_case_outcome_dashboard()
 
 elif selected == "Phân bổ Nguồn lực Cảnh sát":
     df = load_resource_data()
