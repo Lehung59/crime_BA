@@ -10,6 +10,165 @@ import os
 root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 
+def normalize_rows(table):
+    return table.div(table.sum(axis=1).replace(0, np.nan), axis=0).fillna(0) * 100
+
+
+def log_color_scale(table):
+    return np.log10(table + 1)
+
+
+@st.cache_data
+def prepare_time_heatmap_tables(time_data):
+    month_axis = list(range(1, 13))
+
+    dow_month = pd.crosstab(time_data['DayOfWeek'], time_data['Month']).reindex(
+        index=range(7), columns=month_axis, fill_value=0
+    )
+    district_month = pd.crosstab(time_data['District_Name'], time_data['Month']).reindex(
+        columns=month_axis, fill_value=0
+    )
+    district_month = district_month.loc[district_month.sum(axis=1).sort_values(ascending=False).index]
+
+    top_crimes_time = time_data['CrimeGroup_Name'].value_counts().nlargest(8).index.tolist()
+    crime_time_filtered = time_data[time_data['CrimeGroup_Name'].isin(top_crimes_time)]
+    crime_month_heatmap = pd.crosstab(
+        crime_time_filtered['CrimeGroup_Name'], crime_time_filtered['Month']
+    ).reindex(index=top_crimes_time, columns=month_axis, fill_value=0)
+
+    return (
+        dow_month,
+        normalize_rows(dow_month),
+        district_month,
+        normalize_rows(district_month),
+        crime_month_heatmap,
+        normalize_rows(crime_month_heatmap),
+    )
+
+
+def build_heatmap_figure(
+    table,
+    title,
+    height,
+    common_layout,
+    use_percent=False,
+    y_labels=None,
+    show_text=True,
+    color_table=None,
+    colorbar_title=None,
+):
+    hover_template = (
+        '<b>%{y}</b> — <b>%{x}</b><br>Tỷ trọng: %{z:.1f}%<extra></extra>'
+        if use_percent
+        else '<b>%{y}</b> — <b>%{x}</b><br>Số vụ: %{customdata:,}<extra></extra>'
+    )
+    z_values = table.values if color_table is None else color_table.values
+    colorbar_title = colorbar_title or ('%' if use_percent else 'Số vụ')
+    text_values = np.round(table.values, 1) if use_percent else table.values
+    text_template = '%{text:.1f}' if use_percent else '%{text:,}'
+
+    fig = go.Figure(data=go.Heatmap(
+        z=z_values,
+        x=[f'Th{m}' for m in table.columns],
+        y=y_labels if y_labels is not None else table.index,
+        colorscale=[[0, '#f0fff1'], [0.25, '#b5fffc'], [0.5, '#41ead4'], [0.75, '#1b9aaa'], [1.0, '#0d1b2a']],
+        hovertemplate=hover_template,
+        colorbar=dict(title=dict(text=colorbar_title, font=dict(size=12))),
+        customdata=table.values,
+        text=text_values if show_text else None,
+        texttemplate=text_template if show_text else None,
+        textfont=dict(size=9 if height > 450 else 10),
+    ))
+    fig.update_layout(
+        **common_layout,
+        title=dict(text=title, font=dict(size=17, color='#1b2838')),
+        xaxis=dict(title='Tháng', tickmode='linear', side='bottom'),
+        yaxis=dict(title='', autorange='reversed'),
+        height=height,
+    )
+    return fig
+
+
+@st.fragment
+def render_time_heatmaps_fragment(
+    common_layout,
+    dow_names,
+    dow_month,
+    dow_month_pct,
+    district_month,
+    district_month_pct,
+    crime_month_heatmap,
+    crime_month_heatmap_pct,
+):
+    heatmap_mode = st.radio(
+        "Chế độ tính cho cụm heatmap mùa vụ",
+        ["Số vụ", "Tỷ trọng (%)"],
+        horizontal=True,
+        key="criminal_profile_time_heatmap_mode",
+    )
+    use_percent = heatmap_mode == "Tỷ trọng (%)"
+
+    selected_dow_month = dow_month_pct if use_percent else dow_month
+    selected_district_month = district_month_pct if use_percent else district_month
+    selected_crime_month = crime_month_heatmap_pct if use_percent else crime_month_heatmap
+
+    st.markdown("#### 6a. Cụm heatmap mùa vụ")
+    st.markdown(f"""
+    <div class="story-insight">
+        <b>Diễn giải:</b> Cụm này gom ba heatmap để đọc đồng thời theo cùng một cách tính; chế độ hiện tại là <b>{heatmap_mode}</b>.<br><br>
+        <b>Vì sao có thể như vậy:</b> Khi đặt các heatmap cạnh nhau, có thể so sánh nhanh mẫu hình theo ngày, theo địa bàn và theo loại tội để xem biến động mùa vụ xuất hiện ở cấp nào rõ nhất.<br><br>
+        <b>Điểm cần thận trọng:</b> {"Ở chế độ tỷ trọng, mỗi hàng được chuẩn hóa về 100% nên phù hợp để so sánh mẫu hình tương đối, không phải quy mô tuyệt đối." if use_percent else "Ở chế độ số vụ, heatmap Quận/Huyện × Tháng dùng thang màu log vì dữ liệu rất lệch về Bengaluru Urban; nếu không nén thang màu, các địa bàn còn lại sẽ gần như không đọc được."} Nguồn hiện ghi nhận <b>{len(district_month)}</b> quận/huyện.<br><br>
+        <b>Gợi ý nghiệp vụ:</b> Nên dùng chế độ <b>Tỷ trọng (%)</b> để nhận diện thời điểm “nóng” trong từng địa bàn và dùng chế độ <b>Số vụ</b> để quyết định ưu tiên phân bổ lực lượng ở mức quy mô thực tế.
+    </div>
+    """, unsafe_allow_html=True)
+
+    heatmap_tabs = st.tabs([
+        "Ngày × Tháng",
+        "Quận/Huyện × Tháng",
+        "Loại tội × Tháng",
+    ])
+
+    with heatmap_tabs[0]:
+        st.markdown("##### 6a. Bản đồ nhiệt: Ngày trong tuần × Tháng")
+        fig_dow_month = build_heatmap_figure(
+            selected_dow_month,
+            f"Heatmap: Ngày trong tuần × Tháng ({heatmap_mode})",
+            380,
+            common_layout,
+            use_percent=use_percent,
+            y_labels=dow_names,
+            show_text=True,
+        )
+        st.plotly_chart(fig_dow_month, use_container_width=True)
+
+    with heatmap_tabs[1]:
+        st.markdown("##### 6b. Tính mùa vụ theo địa lý: Quận/Huyện nào nóng vào tháng nào?")
+        district_color_table = selected_district_month if use_percent else log_color_scale(selected_district_month)
+        fig_dist_month = build_heatmap_figure(
+            selected_district_month,
+            f"Heatmap: Quận/Huyện × Tháng ({heatmap_mode}{', màu log' if not use_percent else ''})",
+            max(380, len(selected_district_month) * 30 + 100),
+            common_layout,
+            use_percent=use_percent,
+            show_text=False,
+            color_table=district_color_table,
+            colorbar_title='%' if use_percent else 'log10(Số vụ + 1)',
+        )
+        st.plotly_chart(fig_dist_month, use_container_width=True)
+
+    with heatmap_tabs[2]:
+        st.markdown("##### 6c. Chi tiết: Heatmap loại tội theo tháng")
+        fig_time_heat = build_heatmap_figure(
+            selected_crime_month,
+            f"Heatmap: Top 8 nhóm tội × Tháng ({heatmap_mode})",
+            450,
+            common_layout,
+            use_percent=use_percent,
+            show_text=True,
+        )
+        st.plotly_chart(fig_time_heat, use_container_width=True)
+
+
 def create_criminal_profiling_dashboard():
 
     # Construct the file path
@@ -48,7 +207,7 @@ def create_criminal_profiling_dashboard():
     </style>
     """, unsafe_allow_html=True)
 
-    st.title("👤 Criminal Profiling — Data Story")
+    st.title("Criminal Profiling — Data Story")
     st.markdown("> *Phân tích đặc điểm nhân khẩu học của đối tượng phạm tội tại Karnataka, Ấn Độ — "
                 "dựa trên dữ liệu từ Cảnh sát Bang Karnataka (KSP).*")
     
@@ -57,9 +216,9 @@ def create_criminal_profiling_dashboard():
     n_crimes = Criminal_Profiling['Crime_Group1'].nunique() if 'Crime_Group1' in Criminal_Profiling.columns else 0
 
     m1, m2, m3 = st.columns(3)
-    m1.metric("📋 Tổng hồ sơ", f"{total_records:,}")
-    m2.metric("🏷️ Số nhóm đẳng cấp", f"{n_castes}")
-    m3.metric("📂 Loại tội phạm", f"{n_crimes}")
+    m1.metric("Tổng hồ sơ", f"{total_records:,}")
+    m2.metric("Số nhóm đẳng cấp", f"{n_castes}")
+    m3.metric("Loại tội phạm", f"{n_crimes}")
 
     st.markdown("---")
 
@@ -79,10 +238,10 @@ def create_criminal_profiling_dashboard():
 
     st.markdown(f"""
     <div class="story-insight">
-        📌 <b>Insight:</b> Tuổi trung bình của đối tượng phạm tội là <b>{age_mean:.1f} tuổi</b> (trung vị: {age_median:.0f}). 
-        Đáng chú ý, <b>{young_pct:.1f}%</b> đối tượng dưới 35 tuổi — cho thấy tội phạm tập trung chủ yếu ở nhóm <b>thanh niên và trung niên trẻ</b>.<br><br>
-        🤔 <b>Vì sao?</b> Đây là độ tuổi lao động chính, chịu áp lực tài chính lớn sinh ra nhiều biến động tâm lý, cộng đồng này cũng có xung năng và độ bốc đồng cao.<br><br>
-        ⚠️ <b>Điểm bất hợp lý:</b> Nhóm cao tuổi (>60) rất thấp nhưng vẫn xuất hiện trong hồ sơ. Đôi khi điều này không phản ánh đúng thủ phạm thực mà họ chỉ đứng ra "nhận tội thay" cho con cháu trong gia tộc để giữ tương lai cho thế hệ trẻ.
+        <b>Diễn giải:</b> Phân bố tuổi tập trung mạnh ở nhóm trẻ và trung niên trẻ; tuổi trung bình là <b>{age_mean:.1f}</b>, trung vị là <b>{age_median:.0f}</b>, và khoảng <b>{young_pct:.1f}%</b> hồ sơ nằm dưới 35 tuổi.<br><br>
+        <b>Vì sao có thể như vậy:</b> Đây thường là nhóm tham gia lao động, di chuyển và tương tác xã hội nhiều nhất, nên vừa có mức phơi nhiễm xung đột cao hơn, vừa dễ xuất hiện trong các vụ việc đường phố, tranh chấp hoặc vi phạm bột phát.<br><br>
+        <b>Điểm cần thận trọng:</b> Biểu đồ phản ánh số hồ sơ đã ghi nhận, không phải rủi ro thực tế sau khi chuẩn hóa theo quy mô dân số từng nhóm tuổi; vì vậy không nên diễn giải trực tiếp thành “nhóm tuổi nào nguy hiểm hơn”.<br><br>
+        <b>Gợi ý nghiệp vụ:</b> Nếu mục tiêu là phòng ngừa, có thể ưu tiên chương trình can thiệp sớm cho nhóm 18-35 tuổi tại các điểm nóng về xung đột, rượu bia, giao thông và tái phạm.
     </div>
     """, unsafe_allow_html=True)
 
@@ -113,10 +272,10 @@ def create_criminal_profiling_dashboard():
     st.plotly_chart(fig_age, width='stretch')
 
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("👥 Tổng", f"{len(age_data):,}")
-    col2.metric("📍 Trung bình", f"{age_mean:.1f}")
-    col3.metric("📍 Trung vị", f"{age_median:.0f}")
-    col4.metric("📏 Độ lệch chuẩn", f"{age_data.std():.1f}")
+    col1.metric("Tổng", f"{len(age_data):,}")
+    col2.metric("Trung bình", f"{age_mean:.1f}")
+    col3.metric("Trung vị", f"{age_median:.0f}")
+    col4.metric("Độ lệch chuẩn", f"{age_data.std():.1f}")
 
     st.markdown("---")
 
@@ -131,10 +290,10 @@ def create_criminal_profiling_dashboard():
 
     st.markdown(f"""
     <div class="story-insight">
-        📌 <b>Insight:</b> <b>{dominant_pct:.1f}%</b> đối tượng phạm tội là <b>{dominant_gender}</b>. 
-        Dữ liệu cho thấy sự chênh lệch giới tính cực kỳ lớn — gần như toàn bộ hồ sơ là nam giới.<br><br>
-        🤔 <b>Vì sao?</b> Nam giới tại xã hội truyền thống tham gia các hoạt động kinh tế ngoài xã hội nhiều hơn và thường có xu hướng giải quyết xung đột bằng bạo lực thể chất.<br><br>
-        ⚠️ <b>Hạn chế dữ liệu (Data Bias):</b> Tỷ lệ nữ thấp kỷ lục có thể do cảnh sát có xu hướng bỏ qua vi phạm nhỏ của phụ nữ hoặc chỉ xử lý nội bộ. Phụ nữ cũng thường là đồng phạm ẩn danh không bị lên hồ sơ.
+        <b>Diễn giải:</b> Cơ cấu giới tính trong dữ liệu lệch rất mạnh; <b>{dominant_pct:.1f}%</b> hồ sơ thuộc về <b>{dominant_gender}</b>.<br><br>
+        <b>Vì sao có thể như vậy:</b> Một phần có thể đến từ khác biệt về mô hình hành vi, mức độ tham gia vào các tình huống đối đầu ngoài xã hội và loại tội được ghi nhận phổ biến trong dữ liệu này.<br><br>
+        <b>Điểm cần thận trọng:</b> Chênh lệch lớn cũng có thể phản ánh sai lệch ở khâu báo cáo, điều tra hoặc lập hồ sơ; do đó không nên xem đây là bằng chứng đầy đủ về phân bố giới trong toàn bộ hành vi phạm tội.<br><br>
+        <b>Gợi ý nghiệp vụ:</b> Có thể dùng kết quả này để tinh chỉnh truyền thông phòng ngừa và tuần tra theo nhóm đối tượng tại các bối cảnh rủi ro cao, nhưng cần tránh biến nó thành tiêu chí suy đoán cá nhân.
     </div>
     """, unsafe_allow_html=True)
 
@@ -173,10 +332,10 @@ def create_criminal_profiling_dashboard():
 
     st.markdown(f"""
     <div class="story-insight">
-        📌 <b>Insight:</b> Đẳng cấp <b>"{top1_caste}"</b> chiếm <b>{top1_pct:.1f}%</b> trong tổng số hồ sơ có ghi nhận đẳng cấp.
-        Top 10 đẳng cấp chiếm <b>{top_castes.sum()/caste_counts.sum()*100:.1f}%</b> tổng số.<br><br>
-        🤔 <b>Vì sao?</b> Nhiều nhóm đứng dưới thang bậc xã hội phải đối mặt với khó khăn kinh tế, khiến tỷ lệ án trộm cắp mưu sinh và tệ nạn cao hơn.<br><br>
-        ⚠️ <b>Điểm bất hợp lý (Profiling Bias):</b> Rất nhiều hồ sơ "unknown". Ngoài ra, số lượng án lớn có thể đến từ việc cảnh sát định kiến và có tần suất tuần tra, kiểm tra gắt gao quá mức tại các khu ổ chuột của các nhóm thiểu số này.
+        <b>Diễn giải:</b> Trong số hồ sơ có ghi nhận trường Caste, nhóm <b>"{top1_caste}"</b> chiếm <b>{top1_pct:.1f}%</b>; top 10 nhóm cộng lại chiếm <b>{top_castes.sum()/caste_counts.sum()*100:.1f}%</b> số quan sát hợp lệ.<br><br>
+        <b>Vì sao có thể như vậy:</b> Kết quả có thể phản ánh đồng thời cơ cấu dân cư, điều kiện kinh tế - xã hội, mức độ hiện diện của từng nhóm trong địa bàn dữ liệu và cách hệ thống ghi nhận thông tin nhân thân.<br><br>
+        <b>Điểm cần thận trọng:</b> Đây là biến rất nhạy cảm, lại có giá trị thiếu và chất lượng nhập liệu không đồng đều; không phù hợp để dùng như một tín hiệu dự báo trực tiếp hoặc căn cứ ưu tiên kiểm tra một nhóm xã hội cụ thể.<br><br>
+        <b>Gợi ý nghiệp vụ:</b> Hướng sử dụng phù hợp hơn là rà soát chất lượng trường dữ liệu nhân thân, đánh giá thiên lệch ghi nhận và chỉ dùng biến này cho mục đích kiểm định dữ liệu hoặc nghiên cứu bối cảnh ở mức tổng hợp.
     </div>
     """, unsafe_allow_html=True)
 
@@ -197,45 +356,9 @@ def create_criminal_profiling_dashboard():
     st.markdown("---")
 
     # ======================================================================
-    # SECTION 4: OCCUPATION ANALYSIS
+    # SECTION 4: CRIME CATEGORIES
     # ======================================================================
-    st.markdown('<p class="story-question"><span class="section-num">4</span>Đối tượng phạm tội làm nghề gì?</p>', unsafe_allow_html=True)
-
-    occupation_counts = Criminal_Profiling[
-        (Criminal_Profiling['Occupation'] != "unknown") &
-        (Criminal_Profiling['Occupation'] != "Others PI Specify")
-    ]['Occupation'].value_counts()
-    top_occs = occupation_counts.sort_values(ascending=True)[-10:]
-    top1_occ = occupation_counts.index[0]
-
-    st.markdown(f"""
-    <div class="story-insight">
-        📌 <b>Insight:</b> Nghề nghiệp phổ biến nhất trong hồ sơ tội phạm là <b>"{top1_occ}"</b> 
-        với <b>{occupation_counts.iloc[0]:,}</b> đối tượng. Phần lớn thuộc nhóm lao động phổ thông.<br><br>
-        🤔 <b>Vì sao?</b> Nỗi lo cơm áo gạo tiền ở nhóm lao động bấp bênh dễ bị kích phát thành các vụ trộm cướp, bạo động, hoặc ẩu đả nhỏ lẻ khi có các biến cố lạm phát.<br><br>
-        ⚠️ <b>Điểm bất hợp lý:</b> Khuyết thiếu hoàn toàn "Tội phạm cổ cồn trắng" (quan chức, doanh nhân lớn). Dữ liệu này chủ yếu phản ánh bề nổi phân khúc "tội phạm đường phố" của cảnh sát cơ sở, bỏ lọt mảng án mưu mô/tài chính cấp cao.
-    </div>
-    """, unsafe_allow_html=True)
-
-    occ_colors = [f'rgba(6, 214, 160, {0.35 + 0.065*i})' for i in range(len(top_occs))]
-    fig_occ = go.Figure(data=[go.Bar(
-        x=top_occs.values, y=top_occs.index, orientation='h',
-        marker=dict(color=occ_colors, line=dict(color='rgba(255,255,255,0.4)', width=1)),
-        hovertemplate='<b>%{y}</b><br>Count: %{x:,}<extra></extra>',
-        text=top_occs.values, textposition='outside', textfont=dict(size=11, color='#555'),
-    )])
-    fig_occ.update_layout(**common_layout,
-        title=dict(text='Top 10 Nghề nghiệp liên quan đến Tội phạm', font=dict(size=18, color='#1b2838')),
-        xaxis=dict(title='Số lượng', gridcolor=COLOR_GRID, showgrid=True),
-        yaxis=dict(title='', gridcolor=COLOR_GRID), bargap=0.25, height=450)
-    st.plotly_chart(fig_occ, width='stretch')
-
-    st.markdown("---")
-
-    # ======================================================================
-    # SECTION 5: CRIME CATEGORIES
-    # ======================================================================
-    st.markdown('<p class="story-question"><span class="section-num">5</span>Loại tội phạm nào phổ biến nhất?</p>', unsafe_allow_html=True)
+    st.markdown('<p class="story-question"><span class="section-num">4</span>Loại tội phạm nào phổ biến nhất?</p>', unsafe_allow_html=True)
 
     top_crime_groups = Criminal_Profiling['Crime_Group1'].value_counts().nlargest(5)
     top_crime_heads = Criminal_Profiling['Crime_Head2'].value_counts().nlargest(5)
@@ -243,14 +366,14 @@ def create_criminal_profiling_dashboard():
 
     st.markdown(f"""
     <div class="story-insight">
-        📌 <b>Insight:</b> Loại tội phạm phổ biến nhất là <b>"{top1_crime}"</b> với <b>{top_crime_groups.iloc[0]:,}</b> vụ.
-        Top 5 loại tội chiếm <b>{top_crime_groups.sum()/Criminal_Profiling['Crime_Group1'].value_counts().sum()*100:.1f}%</b> tổng số vụ.<br><br>
-        🤔 <b>Vì sao?</b> Trộm cắp, va chạm giao thông, và xô xát là những rủi ro thường trực và trực diện nhất, bắt nguồn từ thói quen sinh hoạt và di chuyển vùng đô thị.<br><br>
-        ⚠️ <b>Sinh cảnh bất hợp lý:</b> Các loại án như đánh bạc (Gambling) hoặc buôn rượu lậu có thể tăng vọt vào dịp nhất định trong năm. Đó thường là hệ quả của áp lực tăng KPI "chiến dịch quét dọn" của cảnh sát chứ không hẳn do trào lưu tội phạm tăng.
+        <b>Diễn giải:</b> Nhóm tội phổ biến nhất là <b>"{top1_crime}"</b> với <b>{top_crime_groups.iloc[0]:,}</b> hồ sơ; top 5 nhóm chiếm <b>{top_crime_groups.sum()/Criminal_Profiling['Crime_Group1'].value_counts().sum()*100:.1f}%</b> toàn bộ dữ liệu, cho thấy cơ cấu hồ sơ tập trung vào một số nhóm chính.<br><br>
+        <b>Vì sao có thể như vậy:</b> Những nhóm tội xuất hiện nhiều thường là các loại dễ phát hiện, dễ lập hồ sơ, hoặc có tần suất phát sinh cao trong đời sống thường nhật và môi trường đô thị.<br><br>
+        <b>Điểm cần thận trọng:</b> Một nhóm tội lớn có thể đang gộp nhiều hành vi khác nhau theo cách phân loại của hệ thống; vì vậy cần đọc thêm lớp phân loại chi tiết trước khi ra quyết định nghiệp vụ.<br><br>
+        <b>Gợi ý nghiệp vụ:</b> Công an có thể dùng biểu đồ này để xác định nhóm tội cần ưu tiên nguồn lực chuyên trách, truyền thông phòng ngừa và chỉ tiêu phân tích sâu ở bước tiếp theo.
     </div>
     """, unsafe_allow_html=True)
 
-    tabs = st.tabs(["📁 Nhóm tội chính", "📂 Phân loại nhỏ"])
+    tabs = st.tabs(["Nhóm tội chính", "Phân loại nhỏ"])
 
     with tabs[0]:
         fig_cg = go.Figure(data=[go.Bar(
@@ -279,19 +402,18 @@ def create_criminal_profiling_dashboard():
     st.markdown("---")
 
     # ======================================================================
-    # SECTION 6: CORRELATION & RELATIONSHIP ANALYSIS (4 charts)
+    # SECTION 5: CORRELATION & RELATIONSHIP ANALYSIS
     # ======================================================================
-    st.markdown('<p class="story-question"><span class="section-num">6</span>Các yếu tố nhân khẩu học có mối tương quan nào với loại tội phạm?</p>', unsafe_allow_html=True)
+    st.markdown('<p class="story-question"><span class="section-num">5</span>Các yếu tố nhân khẩu học có mối tương quan nào với loại tội phạm?</p>', unsafe_allow_html=True)
 
     st.markdown("""
     <div class="story-insight">
-        📌 Phần này khám phá <b>mối quan hệ chéo</b> giữa các biến: tuổi, giới tính, nghề nghiệp, quận/huyện và loại tội phạm.
-        Mỗi biểu đồ trả lời một câu hỏi phân tích cụ thể.
+        Phần này diễn giải các mối liên hệ chéo giữa tuổi, nghề nghiệp, đẳng cấp và loại tội phạm ở mức dữ liệu hồ sơ. Các biểu đồ dưới đây phù hợp để nhận diện mẫu hình mô tả, chưa đủ để kết luận quan hệ nguyên nhân.
     </div>
     """, unsafe_allow_html=True)
 
-    # --- 6a: Age Group vs Crime Type Heatmap ---
-    st.markdown("#### 6a. Nhóm tuổi nào liên quan đến loại tội phạm nào nhiều nhất?")
+    # --- 5a: Age Group vs Crime Type Heatmap ---
+    st.markdown("#### 5a. Nhóm tuổi nào liên quan đến loại tội phạm nào nhiều nhất?")
 
     cp_temp = Criminal_Profiling.copy()
     cp_temp['Age_Group'] = pd.cut(cp_temp['age'], bins=[0, 18, 25, 35, 45, 55, 65, 100],
@@ -305,10 +427,10 @@ def create_criminal_profiling_dashboard():
 
     st.markdown(f"""
     <div class="story-insight">
-        📌 <b>Insight:</b> Ô nóng nhất là nhóm tuổi <b>{max_cell[0]}</b> × loại tội <b>"{max_cell[1]}"</b> 
-        với <b>{heatmap_data.loc[max_cell[0], max_cell[1]]:,}</b> vụ. Nhóm <b>25-35 tuổi</b> có mật độ cao nhất ở hầu hết các loại tội.<br><br>
-        🤔 <b>Vì sao?</b> Nhóm này di chuyển liên tục, tụ tập uống rượu đi đêm nhiều, hay bị áp lực kinh doanh túng quẫn nên dẫn tới đa dạng các hình thức phạm tội.<br><br>
-        ⚠️ <b>Điểm bất hợp lý:</b> Tội phạm vị thành niên hiển thị cường độ khá thấp. Có thể các vụ án liên quan vị thành niên bị gộp chung, hoặc giấu mờ danh tính theo quy định đạo luật bảo vệ quyền trẻ em.
+        <b>Diễn giải:</b> Ô có tần suất lớn nhất nằm ở nhóm tuổi <b>{max_cell[0]}</b> và nhóm tội <b>"{max_cell[1]}"</b>, với <b>{heatmap_data.loc[max_cell[0], max_cell[1]]:,}</b> hồ sơ; nhìn tổng thể, nhóm <b>25-35</b> xuất hiện nổi bật hơn ở nhiều loại tội.<br><br>
+        <b>Vì sao có thể như vậy:</b> Đây là giai đoạn tuổi có cường độ tham gia lao động, di chuyển và va chạm xã hội cao, nên dễ xuất hiện đồng thời ở nhiều nhóm hành vi khác nhau trong dữ liệu hồ sơ.<br><br>
+        <b>Điểm cần thận trọng:</b> Heatmap dùng số lượng tuyệt đối, chưa chuẩn hóa theo quy mô dân số hay cơ cấu tuổi từng địa bàn; ô “nóng” vì vậy có thể phản ánh quy mô nhóm lớn chứ không hẳn là rủi ro cao hơn sau chuẩn hóa.<br><br>
+        <b>Gợi ý nghiệp vụ:</b> Có thể dùng kết quả này để ưu tiên phân tích sâu hơn theo cặp <i>nhóm tuổi - nhóm tội</i>, từ đó thiết kế cảnh báo sớm và biện pháp phòng ngừa phù hợp hơn cho từng nhóm mục tiêu.
     </div>
     """, unsafe_allow_html=True)
 
@@ -327,8 +449,8 @@ def create_criminal_profiling_dashboard():
 
     st.markdown("---")
 
-    # --- 6b: Caste-Crime Treemap ---
-    st.markdown("#### 6b. Đẳng cấp nào liên quan đến loại tội phạm nào?")
+    # --- 5b: Caste-Crime Treemap ---
+    st.markdown("#### 5b. Đẳng cấp nào liên quan đến loại tội phạm nào?")
 
     cp_caste = Criminal_Profiling[Criminal_Profiling['Caste'] != 'unknown'].copy()
     top8_castes = cp_caste['Caste'].value_counts().nlargest(8).index.tolist()
@@ -339,9 +461,10 @@ def create_criminal_profiling_dashboard():
 
     st.markdown(f"""
     <div class="story-insight">
-        📌 <b>Insight:</b> Đẳng cấp <b>"{top1_caste_6b}"</b> dẫn đầu với <b>{top1_c_count:,}</b> hồ sơ phạm tội.<br><br>
-        🤔 <b>Vì sao?</b> Môi trường sống khép kín của từng cộng đồng đặc thù sinh ra các loại hành vi phạm tội có tính lây lan cục bộ (mang tính tổ chức hoặc buôn lậu).<br><br>
-        ⚠️ <b>Điểm bất hợp lý:</b> Con số án khổng lồ ở vài nhóm có thể bị độn lên bởi văn hóa bắt người tập thể (Mob Violence). Một cuộc ẩu đả làng xã có thể ghi nhận tới hàng chục, hàng trăm cáo buộc cho cùng một mã án.
+        <b>Diễn giải:</b> Trong tập đã lọc để trực quan hóa, nhóm <b>"{top1_caste_6b}"</b> có số hồ sơ cao nhất với <b>{top1_c_count:,}</b> bản ghi; treemap cho thấy quy mô từng nhánh Caste và loại tội không phân bố đều.<br><br>
+        <b>Vì sao có thể như vậy:</b> Sự chênh lệch có thể đến từ tổ hợp nhiều yếu tố như quy mô nhóm trong dân cư, đặc điểm địa bàn, chất lượng ghi nhận thông tin nhân thân và cách dữ liệu được lọc để hiển thị.<br><br>
+        <b>Điểm cần thận trọng:</b> Đây là biểu đồ nhạy cảm và rất dễ bị diễn giải quá mức; nó chỉ nên được dùng để kiểm tra mẫu phân bố trong dữ liệu hồ sơ, không nên chuyển trực tiếp thành nhận định nghiệp vụ nhắm vào một nhóm xã hội.<br><br>
+        <b>Gợi ý nghiệp vụ:</b> Nếu cần hành động, ưu tiên phù hợp là kiểm tra chất lượng dữ liệu, đối chiếu với cấu trúc dân cư địa bàn và đánh giá nguy cơ thiên lệch ghi nhận trước khi dùng biến này trong bất kỳ báo cáo chính sách nào.
     </div>
     """, unsafe_allow_html=True)
 
@@ -357,36 +480,8 @@ def create_criminal_profiling_dashboard():
 
     st.markdown("---")
 
-    # --- 6c: Age-Gender-Crime Sunburst ---
-    st.markdown("#### 6c. Mối quan hệ đa chiều: Giới tính → Tuổi → Loại tội?")
-
-    cp_sun = Criminal_Profiling.copy()
-    cp_sun['Age_Group'] = pd.cut(cp_sun['age'], bins=[0, 25, 40, 60, 100],
-                                 labels=['Trẻ (<25)', 'Trưởng thành (25-40)', 'Trung niên (40-60)', 'Cao tuổi (60+)'])
-    top5_crimes_sun = cp_sun['Crime_Group1'].value_counts().nlargest(5).index.tolist()
-    cp_sun = cp_sun[cp_sun['Crime_Group1'].isin(top5_crimes_sun)]
-    cp_sun['Crime_Short'] = cp_sun['Crime_Group1'].str[:25]
-    sun_data = cp_sun.groupby(['Sex', 'Age_Group', 'Crime_Short']).size().reset_index(name='Count')
-
-    st.markdown("""
-    <div class="story-insight">
-        📌 <b>Insight:</b> Biểu đồ Sunburst cho phép quan sát <b>3 chiều cùng lúc</b>: Giới tính → Nhóm tuổi → Loại tội.<br><br>
-        🤔 <b>Vì sao?</b> Nam - trẻ thường gây án bạo lực/đường phố. Nữ giới (nếu bị bắt) thì thường mắc vào các mâu thuẫn gia đình (như của hồi môn bạo lực). Phân tầng rõ rệt thể hiện định kiến phân công lao động.<br><br>
-        ⚠️ <b>Điểm bất hợp lý:</b> Dữ liệu bị thắt cổ chai bởi sự áp đảo đến 94% của Nam, khiến trục Nữ giới bị lu mờ hoàn toàn trong các phân tích tương quan tổng quát.
-    </div>
-    """, unsafe_allow_html=True)
-
-    fig_sun = px.sunburst(sun_data, path=['Sex', 'Age_Group', 'Crime_Short'], values='Count',
-                          color='Count', color_continuous_scale=[[0, '#f0fff1'], [0.5, '#06d6a0'], [1.0, '#0d1b2a']],
-                          title='Sunburst: Giới tính → Nhóm tuổi → Loại tội')
-    fig_sun.update_layout(**common_layout, height=550, title=dict(font=dict(size=17, color='#1b2838')))
-    fig_sun.update_traces(hovertemplate='<b>%{label}</b><br>Số vụ: %{value:,}<br>% của nhóm cha: %{percentParent:.1%}<extra></extra>')
-    st.plotly_chart(fig_sun, width='stretch')
-
-    st.markdown("---")
-
-    # --- 6d: Occupation vs Crime Group (Stacked Bar) ---
-    st.markdown("#### 6d. Mối liên hệ giữa nghề nghiệp và loại hình tội phạm?")
+    # --- 5c: Occupation vs Crime Group (Stacked Bar) ---
+    st.markdown("#### 5c. Mối liên hệ giữa nghề nghiệp và loại hình tội phạm?")
 
     cp_occ = Criminal_Profiling[
         (Criminal_Profiling['Occupation'] != 'unknown') &
@@ -400,9 +495,10 @@ def create_criminal_profiling_dashboard():
 
     st.markdown("""
     <div class="story-insight">
-        📌 <b>Insight:</b> Mỗi nhóm nghề nghiệp có xu hướng phạm loại tội nào nhiều nhất.<br><br>
-        🤔 <b>Vì sao?</b> Nông dân (Farmer) gắn kết chặt với tranh chấp ranh giới đất/trồng trọt. Trong khi dân kinh doanh buôn bán (Business) dễ dính líu lừa đảo công nợ và hình sự hóa quan hệ dân sự.<br><br>
-        ⚠️ <b>Điểm bất hợp lý:</b> Nhóm "Unknown" hay "Others" ở nghề nghiệp có thể đang ôm đồm các nhóm lao động tự do không chính quy siêu lớn, làm ẩn đi tính đặc thù sâu xa mà bộ dữ liệu muốn khai thác ban đầu.
+        <b>Diễn giải:</b> Cơ cấu loại tội giữa các nhóm nghề nghiệp không giống nhau; mỗi nhóm có một mẫu phân bổ tương đối riêng trong tập hồ sơ được giữ lại.<br><br>
+        <b>Vì sao có thể như vậy:</b> Môi trường làm việc, nhịp sinh hoạt, loại xung đột thường gặp và mức độ tiếp xúc với các bối cảnh rủi ro có thể khác nhau theo từng nhóm nghề nghiệp.<br><br>
+        <b>Điểm cần thận trọng:</b> Biểu đồ đã loại các giá trị nghề nghiệp mơ hồ như <b>unknown</b> và <b>Others PI Specify</b>; do đó kết quả phù hợp để so sánh tương đối giữa các nhóm còn lại, nhưng không đại diện trọn vẹn cho toàn bộ hồ sơ.<br><br>
+        <b>Gợi ý nghiệp vụ:</b> Nếu muốn ứng dụng thực tế, nên dùng kết quả này để thiết kế hoạt động phòng ngừa theo bối cảnh nghề nghiệp hoặc môi trường lao động, thay vì coi nghề nghiệp là đặc điểm dùng để suy đoán cá nhân.
     </div>
     """, unsafe_allow_html=True)
 
@@ -425,11 +521,11 @@ def create_criminal_profiling_dashboard():
     st.markdown("---")
 
     # ======================================================================
-    # SECTION 7: TIME ANALYSIS (YẾU TỐ THỜI GIAN) — ENHANCED
+    # SECTION 6: TIME ANALYSIS (YẾU TỐ THỜI GIAN)
     # ======================================================================
-    st.markdown('<p class="story-question"><span class="section-num">7</span>Thời điểm nào trong năm/tháng thường xảy ra nhiều vụ phạm tội nhất?</p>', unsafe_allow_html=True)
+    st.markdown('<p class="story-question"><span class="section-num">6</span>Thời điểm nào trong năm/tháng thường xảy ra nhiều vụ phạm tội nhất?</p>', unsafe_allow_html=True)
     
-    time_data_path = os.path.join(root_dir, 'Component_datasets', 'Crime_Pattern_Analysis_Cleaned.csv')
+    time_data_path = os.path.join(root_dir, 'data', 'processed', 'Crime_Pattern_Analysis_Cleaned.csv')
     if os.path.exists(time_data_path):
         time_data = pd.read_csv(time_data_path)
         time_data['Date'] = pd.to_datetime(time_data[['Year', 'Month', 'Day']], errors='coerce')
@@ -450,124 +546,63 @@ def create_criminal_profiling_dashboard():
         
         st.markdown(f"""
         <div class="story-insight">
-            📌 <b>Insight Phân tích Chuyên sâu:</b> Dữ liệu cho thấy số lượng tội phạm đạt đỉnh vào giai đoạn <b>Tháng 2 và Tháng 3</b> (tháng cao điểm nhất ghi nhận <b>{top_month_val:,}</b> vụ). 
-            Tại Ấn Độ (đặc biệt là tiểu bang tỷ trọng nông nghiệp cao như Karnataka), đây là thời điểm kết thúc vụ mùa thu hoạch mùa đông (Rabi crop) và bước vào mùa khô hạn, 
-            đồng thời 31/3 cũng là thời điểm chốt sổ cuối năm tài chính. 
-            <br><br>
-            Trong tuần, <b>{busiest_dow}</b> có tần suất tội phạm cao nhất, trong khi <b>{quietest_dow}</b> thấp nhất — cho thấy sự khác biệt rõ rệt giữa ngày thường làm việc và cuối tuần.
+            <b>Diễn giải:</b> Theo dữ liệu hiện có, số hồ sơ đạt mức cao nhất vào <b>Tháng {top_month}</b> với <b>{top_month_val:,}</b> vụ; theo trục ngày trong tuần, <b>{busiest_dow}</b> là ngày có tần suất cao nhất và <b>{quietest_dow}</b> là thấp nhất.<br><br>
+            <b>Vì sao có thể như vậy:</b> Mẫu hình thời gian thường chịu ảnh hưởng bởi nhịp sinh hoạt, lịch làm việc, mùa lễ hội, hoạt động kinh tế và cường độ tuần tra hoặc ghi nhận hồ sơ ở từng giai đoạn.<br><br>
+            <b>Điểm cần thận trọng:</b> Đây là mẫu hình mô tả từ dữ liệu lịch sử; mức cao hay thấp ở một thời điểm có thể phản ánh đồng thời cả biến động thật ngoài thực tế lẫn thay đổi trong quy trình ghi nhận.<br><br>
+            <b>Gợi ý nghiệp vụ:</b> Kết quả phù hợp để bố trí lực lượng theo mùa, theo ngày trong tuần và để xây dựng lịch tăng cường tuần tra vào các mốc có xác suất phát sinh cao hơn.
         </div>
         """, unsafe_allow_html=True)
         
-        # --- 7.0: Key metrics row ---
+        # --- 6.0: Key metrics row ---
         m1, m2, m3, m4 = st.columns(4)
-        m1.metric("📅 Tháng cao điểm", f"Tháng {top_month}", f"{top_month_val:,} vụ")
-        m2.metric("📆 Ngày cao điểm", f"Ngày {top_day}", f"{top_day_val:,} vụ")
-        m3.metric("🗓️ Thứ bận nhất", busiest_dow, f"{dow_counts.max():,} vụ")
-        m4.metric("🗓️ Thứ thấp nhất", quietest_dow, f"{dow_counts.min():,} vụ")
-        
-        # --- 7a: Polar Radar — Monthly Seasonality ---
-        st.markdown("#### 7a. Tính mùa vụ — Biểu đồ Radar theo Tháng")
-        
-        month_names_vn = ['Th1', 'Th2', 'Th3', 'Th4', 'Th5', 'Th6', 'Th7', 'Th8', 'Th9', 'Th10', 'Th11', 'Th12']
-        
-        r1, r2 = st.columns([3, 2])
-        with r1:
-            fig_radar = go.Figure()
-            fig_radar.add_trace(go.Scatterpolar(
-                r=list(month_counts.values) + [month_counts.values[0]],
-                theta=month_names_vn + [month_names_vn[0]],
-                fill='toself',
-                fillcolor='rgba(27, 154, 170, 0.2)',
-                line=dict(color='#1b9aaa', width=3),
-                marker=dict(size=8, color='#e63946'),
-                hovertemplate='<b>%{theta}</b><br>Số vụ: %{r:,}<extra></extra>',
-                name='Số vụ phạm tội'
-            ))
-            fig_radar.update_layout(
-                **common_layout,
-                polar=dict(
-                    radialaxis=dict(visible=True, gridcolor=COLOR_GRID, tickfont=dict(size=10)),
-                    angularaxis=dict(tickfont=dict(size=12, color='#1b2838')),
-                    bgcolor='rgba(0,0,0,0)',
-                ),
-                title=dict(text='Radar: Tần suất tội phạm theo Tháng', font=dict(size=17, color='#1b2838')),
-                showlegend=False, height=450,
-            )
-            st.plotly_chart(fig_radar, use_container_width=True)
-        
-        with r2:
-            st.markdown("""
-            <div class="story-insight">
-                📌 <b>Đọc biểu đồ Radar:</b><br>
-                • Các "cánh" <b>dài ra</b> = tháng có tội phạm <b>cao</b><br>
-                • Hình dạng <b>không tròn đều</b> cho thấy tội phạm có <b>tính mùa vụ</b> rõ ràng<br>
-                • Nếu hình gần tròn → tội phạm phân bố đều quanh năm<br><br>
-                <b>🌾 Bối cảnh Karnataka:</b><br>
-                • <b>Th1-Th3:</b> Thu hoạch vụ Rabi → tiền mặt lưu thông nhiều → trộm cắp tăng<br>
-                • <b>Th3:</b> Chốt sổ năm tài chính (31/3) → giao dịch tài chính dồn dập → lừa đảo tăng<br>
-                • <b>Th2-Th3:</b> Lễ hội lớn (Holi, Shivaratri) → di chuyển ồ ạt → tai nạn giao thông tăng<br>
-                • <b>Th7-Th8:</b> Mùa mưa (Monsoon) → giảm di chuyển → tội phạm giảm
-            </div>
-            """, unsafe_allow_html=True)
-        
+        m1.metric("Tháng cao điểm", f"Tháng {top_month}", f"{top_month_val:,} vụ")
+        m2.metric("Ngày cao điểm", f"Ngày {top_day}", f"{top_day_val:,} vụ")
+        m3.metric("Thứ bận nhất", busiest_dow, f"{dow_counts.max():,} vụ")
+        m4.metric("Thứ thấp nhất", quietest_dow, f"{dow_counts.min():,} vụ")
+
+        (
+            dow_month,
+            dow_month_pct,
+            district_month,
+            district_month_pct,
+            crime_month_heatmap,
+            crime_month_heatmap_pct,
+        ) = prepare_time_heatmap_tables(time_data)
+
+        render_time_heatmaps_fragment(
+            common_layout,
+            dow_names,
+            dow_month,
+            dow_month_pct,
+            district_month,
+            district_month_pct,
+            crime_month_heatmap,
+            crime_month_heatmap_pct,
+        )
+
         st.markdown("---")
-        
-        # --- 7b: Day of Week × Month Heatmap ---
-        st.markdown("#### 7b. Bản đồ nhiệt: Ngày trong tuần × Tháng")
-        
-        dow_month = pd.crosstab(time_data['DayOfWeek'], time_data['Month'])
-        
-        st.markdown("""
-        <div class="story-insight">
-            📌 <b>Insight:</b> Heatmap này cho thấy <b>khi nào chính xác trong tuần và tháng</b> tội phạm tập trung nhất.
-            Các ô <b>tối nhất</b> = thời điểm cảnh sát cần tăng cường tuần tra mạnh nhất. Đây là công cụ lập kế hoạch <b>ca trực chiến thuật</b>.
-        </div>
-        """, unsafe_allow_html=True)
-        
-        fig_dow_month = go.Figure(data=go.Heatmap(
-            z=dow_month.values, 
-            x=[f'Th{m}' for m in dow_month.columns],
-            y=dow_names,
-            colorscale=[[0, '#f0fff1'], [0.25, '#b5fffc'], [0.5, '#41ead4'], [0.75, '#1b9aaa'], [1.0, '#0d1b2a']],
-            hovertemplate='<b>%{y}</b> — <b>%{x}</b><br>Số vụ: %{z:,}<extra></extra>',
-            colorbar=dict(title=dict(text='Số vụ', font=dict(size=12))),
-            text=dow_month.values,
-            texttemplate='%{text:,}',
-            textfont=dict(size=10),
-        ))
-        fig_dow_month.update_layout(**common_layout,
-            title=dict(text='Heatmap: Ngày trong tuần × Tháng', font=dict(size=17, color='#1b2838')),
-            xaxis=dict(title='Tháng', tickmode='linear', side='bottom'),
-            yaxis=dict(title='', autorange='reversed'),
-            height=380)
-        st.plotly_chart(fig_dow_month, use_container_width=True)
-        
-        st.markdown("---")
-        
-        # --- 7c: Year-over-Year Trend with Growth Rate ---
-        st.markdown("#### 7c. Xu hướng hàng năm & Tốc độ tăng trưởng tội phạm")
-        
+
         yearly_counts = time_data.groupby('Year').size().reset_index(name='Count')
-        # Exclude 2024 if data is incomplete
         full_years = yearly_counts[yearly_counts['Year'] < 2024].copy()
         full_years['Growth'] = full_years['Count'].pct_change() * 100
         full_years['Growth_Text'] = full_years['Growth'].apply(
             lambda x: f"+{x:.1f}%" if x > 0 else (f"{x:.1f}%" if pd.notna(x) else "—"))
-        
-        # Find COVID year
         covid_year = full_years.loc[full_years['Year'] == 2020]
-        
+
+        pre_covid = time_data[time_data['Year'].isin([2018, 2019])].groupby('Month').size() / 2
+        during_covid = time_data[time_data['Year'] == 2020].groupby('Month').size()
+        post_covid = time_data[time_data['Year'].isin([2022, 2023])].groupby('Month').size() / 2
+
+        st.markdown("#### 6d. Xu hướng hàng năm & Tốc độ tăng trưởng tội phạm")
         st.markdown(f"""
         <div class="story-insight">
-            📌 <b>Insight:</b> Tội phạm giảm mạnh vào năm <b>2019-2020</b> (trùng với giai đoạn lockdown COVID-19), 
-            sau đó <b>phục hồi mạnh mẽ từ 2021</b> và đạt đỉnh mới vào <b>2023</b>. Năm 2024 chỉ có dữ liệu một phần nên được loại khỏi phân tích xu hướng.
-            {f"Năm 2020 ghi nhận mức giảm <b>{covid_year['Growth'].values[0]:.1f}%</b> — mức giảm lớn nhất trong chuỗi dữ liệu." if len(covid_year) > 0 and pd.notna(covid_year['Growth'].values[0]) else ""}
+            <b>Diễn giải:</b> Chuỗi thời gian cho thấy số hồ sơ giảm mạnh trong giai đoạn <b>2019-2020</b>, sau đó phục hồi từ <b>2021</b> và đạt mức cao mới vào <b>2023</b>.<br><br>
+            <b>Vì sao có thể như vậy:</b> Biến động này có thể gắn với thay đổi trong mức độ di chuyển, hoạt động kinh tế - xã hội, ưu tiên tuần tra và năng lực xử lý hồ sơ qua các giai đoạn khác nhau.<br><br>
+            <b>Điểm cần thận trọng:</b> {f"Năm 2020 là năm giảm mạnh nhất, với tốc độ thay đổi <b>{covid_year['Growth'].values[0]:.1f}%</b> so với năm trước; tuy nhiên tăng trưởng phần trăm luôn cần đọc cùng quy mô tuyệt đối." if len(covid_year) > 0 and pd.notna(covid_year['Growth'].values[0]) else "Cần đọc chỉ số tăng trưởng cùng quy mô tuyệt đối để tránh hiểu sai các năm nền thấp."}<br><br>
+            <b>Gợi ý nghiệp vụ:</b> Biểu đồ này phù hợp để đánh giá nhu cầu nguồn lực theo chu kỳ năm và rà soát xem thay đổi chính sách hay tổ chức trong từng giai đoạn có đi kèm biến động về khối lượng vụ việc hay không.
         </div>
         """, unsafe_allow_html=True)
-        
         fig_yoy = go.Figure()
-        
-        # Bar chart for absolute counts
         bar_colors = ['#e63946' if y == 2020 else '#1b9aaa' for y in full_years['Year']]
         fig_yoy.add_trace(go.Bar(
             x=full_years['Year'], y=full_years['Count'],
@@ -578,8 +613,7 @@ def create_criminal_profiling_dashboard():
             name='Số vụ',
             yaxis='y'
         ))
-        
-        # Line for growth rate on secondary axis
+
         growth_data = full_years.dropna(subset=['Growth'])
         fig_yoy.add_trace(go.Scatter(
             x=growth_data['Year'], y=growth_data['Growth'],
@@ -592,152 +626,31 @@ def create_criminal_profiling_dashboard():
             name='% Tăng trưởng',
             yaxis='y2'
         ))
-        
-        fig_yoy.update_layout(**common_layout,
+
+        fig_yoy.update_layout(
+            **common_layout,
             title=dict(text='Xu hướng Tội phạm Hàng năm (2016-2023)', font=dict(size=17, color='#1b2838')),
             xaxis=dict(title='Năm', tickmode='linear', dtick=1, gridcolor=COLOR_GRID),
             yaxis=dict(title='Số vụ phạm tội', gridcolor=COLOR_GRID, showgrid=True),
-            yaxis2=dict(title='% Tăng trưởng', overlaying='y', side='right', 
+            yaxis2=dict(title='% Tăng trưởng', overlaying='y', side='right',
                        showgrid=False, zeroline=True, zerolinecolor='rgba(244,162,97,0.3)'),
-            legend=dict(orientation='h', yanchor='bottom', y=-0.2, xanchor='center', x=0.5, font=dict(size=12)),
-            height=480, bargap=0.3)
+            legend=dict(orientation='h', yanchor='bottom', y=-0.25, xanchor='center', x=0.5, font=dict(size=11)),
+            height=500, bargap=0.3
+        )
         st.plotly_chart(fig_yoy, use_container_width=True)
-        
+
         st.markdown("---")
-        
-        # --- 7d: District × Month Heatmap (Geographic Seasonality) ---
-        st.markdown("#### 7d. Tính mùa vụ theo địa lý: Quận/Huyện nào nóng vào tháng nào?")
-        
-        district_month = pd.crosstab(time_data['District_Name'], time_data['Month'])
-        # Normalize per district (row-wise %) to show seasonal pattern, not absolute volume
-        district_month_pct = district_month.div(district_month.sum(axis=1), axis=0) * 100
-        
+
+        st.markdown("#### 6e. Tác động COVID-19 lên xu hướng tội phạm theo tháng")
         st.markdown("""
         <div class="story-insight">
-            📌 <b>Insight:</b> Heatmap này được <b>chuẩn hóa theo từng quận</b> (mỗi hàng = 100%) để so sánh <b>mẫu hình mùa vụ</b> 
-            giữa các địa phương — cho thấy mỗi quận "nóng" vào thời điểm khác nhau, phục vụ phân bổ nguồn lực <b>luân chuyển theo mùa</b>.
+            <b>Diễn giải:</b> So sánh ba giai đoạn <b>trước COVID</b>, <b>trong COVID</b> và <b>sau COVID</b> cho thấy số hồ sơ giảm sâu nhất trong các tháng giữa năm 2020, sau đó phục hồi rõ ở giai đoạn hậu dịch.<br><br>
+            <b>Vì sao có thể như vậy:</b> Các hạn chế đi lại, thay đổi cường độ hoạt động kinh tế và dịch chuyển ưu tiên quản lý trong thời gian dịch có thể làm thay đổi cả số vụ phát sinh lẫn số vụ được phát hiện hoặc lập hồ sơ.<br><br>
+            <b>Điểm cần thận trọng:</b> Đây vẫn là so sánh mô tả giữa các giai đoạn; biểu đồ cho thấy sự trùng hợp về thời điểm, nhưng chưa đủ để khẳng định toàn bộ biến động là do riêng COVID.<br><br>
+            <b>Gợi ý nghiệp vụ:</b> Có thể dùng kết quả này để xây dựng kịch bản ứng phó cho các giai đoạn gián đoạn lớn trong tương lai, nhất là bài toán giữ ổn định ghi nhận hồ sơ và phân bổ lực lượng theo mức độ hạn chế xã hội.
         </div>
         """, unsafe_allow_html=True)
-        
-        fig_dist_month = go.Figure(data=go.Heatmap(
-            z=district_month_pct.values,
-            x=[f'Th{m}' for m in district_month_pct.columns],
-            y=district_month_pct.index,
-            colorscale=[[0, '#f0fff1'], [0.3, '#b5fffc'], [0.5, '#41ead4'], [0.75, '#1b9aaa'], [1.0, '#0d1b2a']],
-            hovertemplate='<b>%{y}</b> — <b>%{x}</b><br>Tỷ trọng: %{z:.1f}%<extra></extra>',
-            colorbar=dict(title=dict(text='%', font=dict(size=12))),
-            text=np.round(district_month_pct.values, 1),
-            texttemplate='%{text:.1f}',
-            textfont=dict(size=9),
-        ))
-        fig_dist_month.update_layout(**common_layout,
-            title=dict(text='Heatmap: Quận/Huyện × Tháng (chuẩn hóa %)', font=dict(size=17, color='#1b2838')),
-            xaxis=dict(title='Tháng', tickmode='linear', side='bottom'),
-            yaxis=dict(title='', autorange='reversed'),
-            height=max(380, len(district_month_pct) * 30 + 100))
-        st.plotly_chart(fig_dist_month, use_container_width=True)
-        
-        st.markdown("---")
-        
-        # --- 7e: Monthly Crime Composition — Stacked Area ---
-        st.markdown("#### 7e. Cơ cấu loại tội phạm thay đổi như thế nào theo tháng?")
-        
-        top6_crimes = time_data['CrimeGroup_Name'].value_counts().nlargest(6).index.tolist()
-        crime_month_comp = time_data[time_data['CrimeGroup_Name'].isin(top6_crimes)].groupby(
-            ['Month', 'CrimeGroup_Name']).size().reset_index(name='Count')
-        
-        # Calculate share
-        total_per_month = crime_month_comp.groupby('Month')['Count'].transform('sum')
-        crime_month_comp['Share'] = crime_month_comp['Count'] / total_per_month * 100
-        
-        st.markdown("""
-        <div class="story-insight">
-            📌 <b>Insight:</b> Biểu đồ vùng xếp chồng (Stacked Area) cho thấy <b>cơ cấu tội phạm dịch chuyển theo mùa</b>:
-            ví dụ, tỷ trọng <b>Tai nạn giao thông</b> tăng vào mùa lễ hội (Th2-3), trong khi <b>Mất tích (Missing Person)</b> 
-            có xu hướng ổn định hơn suốt năm. Điều này hỗ trợ cảnh sát bố trí đúng <b>lực lượng chuyên trách</b> cho từng giai đoạn.
-        </div>
-        """, unsafe_allow_html=True)
-        
-        area_colors = ['#1b9aaa', '#06d6a0', '#f4a261', '#e63946', '#577590', '#4ecdc4']
-        fig_area = go.Figure()
-        for i, crime in enumerate(top6_crimes):
-            crime_data = crime_month_comp[crime_month_comp['CrimeGroup_Name'] == crime].sort_values('Month')
-            base_color = area_colors[i % len(area_colors)]
-            if 'rgb' in base_color:
-                fill_color = base_color.replace(')', ', 0.7)').replace('rgb', 'rgba')
-            else:
-                fill_color = f"rgba({int(base_color[1:3], 16)}, {int(base_color[3:5], 16)}, {int(base_color[5:7], 16)}, 0.7)"
-            
-            fig_area.add_trace(go.Scatter(
-                x=crime_data['Month'], y=crime_data['Share'],
-                mode='lines', stackgroup='one',
-                name=crime[:35],
-                line=dict(width=0.5, color=base_color),
-                fillcolor=fill_color,
-                hovertemplate=f'<b>{crime[:30]}</b><br>Tháng %{{x}}<br>Tỷ trọng: %{{y:.1f}}%<extra></extra>',
-            ))
-        fig_area.update_layout(**common_layout,
-            title=dict(text='Cơ cấu Top 6 loại tội theo Tháng (Stacked Area %)', font=dict(size=17, color='#1b2838')),
-            xaxis=dict(title='Tháng', tickmode='linear', tick0=1, dtick=1, gridcolor=COLOR_GRID),
-            yaxis=dict(title='Tỷ trọng (%)', gridcolor=COLOR_GRID, showgrid=True, range=[0, 100]),
-            legend=dict(orientation='h', yanchor='bottom', y=-0.35, xanchor='center', x=0.5, font=dict(size=10)),
-            height=450)
-        st.plotly_chart(fig_area, use_container_width=True)
-        
-        st.markdown("---")
-        
-        # --- 7f: Day-of-Week Pattern by Crime Type (Grouped Bar) ---
-        st.markdown("#### 7f. Loại tội phạm nào có mẫu hình ngày trong tuần đặc biệt?")
-        
-        top5_crimes_dow = time_data['CrimeGroup_Name'].value_counts().nlargest(5).index.tolist()
-        dow_crime = time_data[time_data['CrimeGroup_Name'].isin(top5_crimes_dow)].copy()
-        dow_crime_ct = pd.crosstab(dow_crime['CrimeGroup_Name'], dow_crime['DayOfWeek'])
-        # Normalize per crime type (row-wise)
-        dow_crime_pct = dow_crime_ct.div(dow_crime_ct.sum(axis=1), axis=0) * 100
-        
-        st.markdown("""
-        <div class="story-insight">
-            📌 <b>Insight:</b> Mỗi loại tội phạm có <b>nhịp điệu tuần khác nhau</b>. Ví dụ: Tai nạn giao thông thường <b>giảm rõ rệt vào Chủ Nhật</b> 
-            (ít xe cộ hơn), trong khi Trộm cắp có thể <b>cao hơn vào cuối tuần</b> (nhà vắng chủ). 
-            Nhận diện mẫu hình này giúp bố trí ca trực phù hợp cho từng đội chuyên trách.
-        </div>
-        """, unsafe_allow_html=True)
-        
-        fig_dow_crime = go.Figure()
-        dow_colors = ['#1b9aaa', '#06d6a0', '#f4a261', '#e63946', '#577590']
-        for i, crime in enumerate(dow_crime_pct.index):
-            fig_dow_crime.add_trace(go.Bar(
-                x=dow_names, y=dow_crime_pct.loc[crime].values,
-                name=crime[:30],
-                marker_color=dow_colors[i % len(dow_colors)],
-                hovertemplate=f'<b>{crime[:30]}</b><br>%{{x}}<br>Tỷ trọng: %{{y:.1f}}%<extra></extra>',
-            ))
-        fig_dow_crime.update_layout(**common_layout, barmode='group',
-            title=dict(text='Phân bố Ngày trong tuần theo Loại tội (chuẩn hóa %)', font=dict(size=17, color='#1b2838')),
-            xaxis=dict(title='Ngày trong tuần', gridcolor=COLOR_GRID),
-            yaxis=dict(title='Tỷ trọng trong tuần (%)', gridcolor=COLOR_GRID, showgrid=True),
-            legend=dict(orientation='h', yanchor='bottom', y=-0.3, xanchor='center', x=0.5, font=dict(size=10)),
-            height=450, bargap=0.15, bargroupgap=0.05)
-        st.plotly_chart(fig_dow_crime, use_container_width=True)
-        
-        st.markdown("---")
-        
-        # --- 7g: COVID-19 Impact — Before vs During vs After ---
-        st.markdown("#### 7g. Tác động COVID-19 lên xu hướng tội phạm theo tháng")
-        
-        pre_covid = time_data[time_data['Year'].isin([2018, 2019])].groupby('Month').size() / 2
-        during_covid = time_data[time_data['Year'] == 2020].groupby('Month').size()
-        post_covid = time_data[time_data['Year'].isin([2022, 2023])].groupby('Month').size() / 2
-        
-        st.markdown("""
-        <div class="story-insight">
-            📌 <b>Insight:</b> So sánh <b>trước COVID (2018-2019)</b>, <b>trong COVID (2020)</b> và <b>sau COVID (2022-2023)</b> 
-            cho thấy lockdown khiến tội phạm giảm đặc biệt mạnh vào <b>Th4-Th6/2020</b> (giai đoạn phong tỏa nghiêm ngặt nhất). 
-            Tuy nhiên, sau dịch, tội phạm không chỉ phục hồi mà còn <b>vượt qua mức trước dịch</b> ở nhiều tháng — 
-            phản ánh hiệu ứng "bùng nổ sau kiềm chế" và các áp lực kinh tế hậu đại dịch.
-        </div>
-        """, unsafe_allow_html=True)
-        
+
         fig_covid = go.Figure()
         fig_covid.add_trace(go.Scatter(
             x=list(range(1, 13)), y=pre_covid.reindex(range(1, 13), fill_value=0).values,
@@ -760,83 +673,72 @@ def create_criminal_profiling_dashboard():
             marker=dict(size=7, color='#06d6a0'),
             hovertemplate='Tháng %{x}<br>TB/tháng: %{y:,.0f} vụ<extra></extra>'
         ))
-        
-        # Add lockdown annotation
-        fig_covid.add_vrect(x0=3.5, x1=6.5, fillcolor='rgba(230,57,70,0.08)', line_width=0,
-                           annotation_text='🔒 Lockdown', annotation_position='top',
-                           annotation_font=dict(size=11, color='#e63946'))
-        
-        fig_covid.update_layout(**common_layout,
-            title=dict(text='Tác động COVID-19: So sánh xu hướng tháng (Trước / Trong / Sau)', font=dict(size=17, color='#1b2838')),
+        fig_covid.add_vrect(
+            x0=3.5, x1=6.5, fillcolor='rgba(230,57,70,0.08)', line_width=0,
+            annotation_text='Lockdown', annotation_position='top',
+            annotation_font=dict(size=11, color='#e63946')
+        )
+        fig_covid.update_layout(
+            **common_layout,
+            title=dict(text='So sánh trước / trong / sau COVID', font=dict(size=17, color='#1b2838')),
             xaxis=dict(title='Tháng', tickmode='linear', tick0=1, dtick=1, gridcolor=COLOR_GRID),
             yaxis=dict(title='Số vụ phạm tội (trung bình/tháng)', gridcolor=COLOR_GRID, showgrid=True),
-            legend=dict(orientation='h', yanchor='bottom', y=-0.25, xanchor='center', x=0.5, font=dict(size=12)),
-            height=450)
+            legend=dict(orientation='h', yanchor='bottom', y=-0.28, xanchor='center', x=0.5, font=dict(size=10)),
+            height=500
+        )
         st.plotly_chart(fig_covid, use_container_width=True)
-        
-        # --- 7h: Monthly trend line chart + Heatmap (original charts, refined) ---
+
         st.markdown("---")
-        st.markdown("#### 7h. Chi tiết: Biểu đồ đường & Heatmap loại tội theo tháng")
-        
-        t1, t2 = st.columns(2)
-        with t1:
-            fig_month = go.Figure()
-            fig_month.add_trace(go.Scatter(
-                x=month_counts.index, y=month_counts.values, mode='lines+markers',
-                line=dict(color='#e63946', width=3),
-                marker=dict(size=8, color='#1b9aaa', line=dict(width=2, color='white')),
-                fill='tozeroy', fillcolor='rgba(27, 154, 170, 0.1)',
-                hovertemplate='Tháng %{x}<br>Số vụ: %{y:,}<extra></extra>',
+
+        # --- 6f: Monthly Crime Composition — Stacked Area ---
+        st.markdown("#### 6f. Cơ cấu loại tội phạm thay đổi như thế nào theo tháng?")
+
+        top6_crimes = time_data['CrimeGroup_Name'].value_counts().nlargest(6).index.tolist()
+        crime_month_comp = time_data[time_data['CrimeGroup_Name'].isin(top6_crimes)].groupby(
+            ['Month', 'CrimeGroup_Name']).size().reset_index(name='Count')
+        total_per_month = crime_month_comp.groupby('Month')['Count'].transform('sum')
+        crime_month_comp['Share'] = crime_month_comp['Count'] / total_per_month * 100
+
+        st.markdown("""
+        <div class="story-insight">
+            <b>Diễn giải:</b> Biểu đồ thể hiện sự thay đổi trong <b>cơ cấu</b> các nhóm tội theo tháng; trọng tâm ở đây là tỷ trọng tương đối giữa các nhóm, không phải quy mô tuyệt đối của toàn bộ vụ việc.<br><br>
+            <b>Vì sao có thể như vậy:</b> Một số nhóm tội có thể nhạy hơn với mùa lễ hội, chu kỳ lao động, thời tiết hoặc cường độ kiểm tra chuyên đề, nên tỷ trọng của chúng thay đổi theo tháng.<br><br>
+            <b>Điểm cần thận trọng:</b> Khi một nhóm tăng tỷ trọng, điều đó không nhất thiết đồng nghĩa số vụ tuyệt đối của nhóm đó tăng; cũng có thể là các nhóm khác giảm nhanh hơn trong cùng giai đoạn.<br><br>
+            <b>Gợi ý nghiệp vụ:</b> Biểu đồ này phù hợp để lên kế hoạch theo mùa cho lực lượng chuyên trách, ví dụ điều chỉnh nhân sự theo nhóm tội có xu hướng tăng tỷ trọng trong từng giai đoạn của năm.
+        </div>
+        """, unsafe_allow_html=True)
+
+        area_colors = ['#1b9aaa', '#06d6a0', '#f4a261', '#e63946', '#577590', '#4ecdc4']
+        fig_area = go.Figure()
+        for i, crime in enumerate(top6_crimes):
+            crime_data = crime_month_comp[crime_month_comp['CrimeGroup_Name'] == crime].sort_values('Month')
+            base_color = area_colors[i % len(area_colors)]
+            fill_color = f"rgba({int(base_color[1:3], 16)}, {int(base_color[3:5], 16)}, {int(base_color[5:7], 16)}, 0.7)"
+
+            fig_area.add_trace(go.Scatter(
+                x=crime_data['Month'], y=crime_data['Share'],
+                mode='lines', stackgroup='one',
+                name=crime[:35],
+                line=dict(width=0.5, color=base_color),
+                fillcolor=fill_color,
+                hovertemplate=f'<b>{crime[:30]}</b><br>Tháng %{{x}}<br>Tỷ trọng: %{{y:.1f}}%<extra></extra>',
             ))
-            # Mark peak month
-            fig_month.add_annotation(x=top_month, y=top_month_val,
-                text=f"🔺 Đỉnh: {top_month_val:,}", showarrow=True, arrowhead=2,
-                font=dict(size=11, color='#e63946'), bgcolor='rgba(255,255,255,0.8)')
-            fig_month.update_layout(**common_layout, 
-                title=dict(text="Xu hướng tội phạm theo Tháng", font=dict(size=17, color='#1b2838')),
-                xaxis=dict(title="Tháng", tickmode='linear', tick0=1, dtick=1, gridcolor=COLOR_GRID),
-                yaxis=dict(title="Số vụ phạm tội", gridcolor=COLOR_GRID), showlegend=False)
-            st.plotly_chart(fig_month, use_container_width=True)
-            
-        with t2:
-            fig_day = go.Figure()
-            fig_day.add_trace(go.Scatter(
-                x=day_counts.index, y=day_counts.values, mode='lines+markers',
-                line=dict(color='#1b9aaa', width=3),
-                marker=dict(size=6, color='#e63946', line=dict(width=1, color='white')),
-                fill='tozeroy', fillcolor='rgba(230, 57, 70, 0.08)',
-                hovertemplate='Ngày %{x}<br>Số vụ: %{y:,}<extra></extra>',
-            ))
-            fig_day.update_layout(**common_layout, 
-                title=dict(text="Tần suất tội phạm theo Ngày trong tháng", font=dict(size=17, color='#1b2838')),
-                xaxis=dict(title="Ngày", tickmode='linear', tick0=1, dtick=5, gridcolor=COLOR_GRID),
-                yaxis=dict(title="Số vụ phạm tội", gridcolor=COLOR_GRID), showlegend=False)
-            st.plotly_chart(fig_day, use_container_width=True)
-            
-        # Heatmap: Crime Group × Month
-        top_crimes_time = time_data['CrimeGroup_Name'].value_counts().nlargest(8).index
-        heatmap_time = pd.crosstab(time_data[time_data['CrimeGroup_Name'].isin(top_crimes_time)]['CrimeGroup_Name'], time_data['Month'])
-        
-        fig_time_heat = go.Figure(data=go.Heatmap(
-            z=heatmap_time.values, 
-            x=[f'Th{m}' for m in heatmap_time.columns], 
-            y=heatmap_time.index,
-            colorscale=[[0, '#f0fff1'], [0.4, '#41ead4'], [0.7, '#1b9aaa'], [1.0, '#0d1b2a']],
-            hovertemplate='<b>%{x}</b> — <b>%{y}</b><br>Số vụ: %{z:,}<extra></extra>',
-            colorbar=dict(title=dict(text='Số vụ', font=dict(size=12))),
-        ))
-        fig_time_heat.update_layout(**common_layout, 
-            title=dict(text='Heatmap: Top 8 nhóm tội × Tháng', font=dict(size=17, color='#1b2838')),
-            xaxis=dict(title="Tháng", tickmode='linear', dtick=1),
-            yaxis=dict(title=""), height=450)
-        st.plotly_chart(fig_time_heat, use_container_width=True)
+        fig_area.update_layout(
+            **common_layout,
+            title=dict(text='Cơ cấu Top 6 loại tội theo Tháng (Stacked Area %)', font=dict(size=17, color='#1b2838')),
+            xaxis=dict(title='Tháng', tickmode='linear', tick0=1, dtick=1, gridcolor=COLOR_GRID),
+            yaxis=dict(title='Tỷ trọng (%)', gridcolor=COLOR_GRID, showgrid=True, range=[0, 100]),
+            legend=dict(orientation='h', yanchor='bottom', y=-0.35, xanchor='center', x=0.5, font=dict(size=10)),
+            height=450
+        )
+        st.plotly_chart(fig_area, use_container_width=True)
 
     st.markdown("---")
 
     # ======================================================================
     # CONCLUSION
     # ======================================================================
-    st.markdown("### 🎯 Kết luận & Khuyến nghị")
+    st.markdown("### Kết luận & Khuyến nghị")
     st.markdown(f"""
     Từ việc phân tích **{total_records:,}** hồ sơ tội phạm tại Karnataka, chúng tôi rút ra các kết luận chính:
     
@@ -847,6 +749,5 @@ def create_criminal_profiling_dashboard():
     5. **Loại tội chủ đạo**: **"{top1_crime}"** chiếm tỷ trọng lớn nhất.
     {f'6. **Thời điểm phạm tội**: Tháng {top_month} và ngày {top_day} hàng tháng là các mốc có tần suất cao nhất, cần chú ý tuần tra.' if 'top_month' in locals() else ''}
     
-    > 💡 *Các insight trên có thể được sử dụng để xây dựng mô hình dự đoán tái phạm (Recidivism Prediction) 
-    > và tối ưu hóa phân bổ nguồn lực cảnh sát (Resource Allocation) — hai module tiếp theo trong hệ thống.*
+    > *Các kết quả trên phù hợp để làm đầu vào cho các bước phân tích tiếp theo như dự báo tái phạm hoặc hỗ trợ phân bổ nguồn lực, với điều kiện tiếp tục kiểm tra chất lượng dữ liệu và mức độ đại diện của từng biến.*
     """)
