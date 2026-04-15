@@ -162,11 +162,9 @@ def create_case_outcome_dashboard():
     # HEADER
     # ======================================================================
     st.title("Theo dõi & Đánh giá Hiệu quả Xử lý Vụ án")
-    st.markdown("> *Phân tích tỷ lệ phá án, kết án, và đặc điểm nạn nhân — dựa trên 1.28 triệu hồ sơ FIR thực tế.*")
-
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("Tổng hồ sơ FIR", f"{total:,}")
-    m2.metric("Kết án", f"{convicted:,}", f"{conv_rate:.1f}%")
+    m2.metric("Kết án", f"{convicted:,}")
     m3.metric("Tỷ lệ phá án", f"{detect_rate:.1f}%")
     m4.metric("Đang chờ xử", f"{pending:,}")
 

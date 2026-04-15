@@ -310,6 +310,9 @@ def allocate_resources(option, district_df, updated_asi, updated_chc, updated_cp
     selected_units = st.multiselect(
         "Lọc theo Đơn vị cảnh sát:", police_units, default=["Tất cả"]
     )
+    if "Tất cả" in selected_units and len(selected_units) > 1:
+        selected_units = [unit for unit in selected_units if unit != "Tất cả"]
+
     view = (
         result
         if ("Tất cả" in selected_units or not selected_units)
@@ -320,6 +323,7 @@ def allocate_resources(option, district_df, updated_asi, updated_chc, updated_cp
     st.dataframe(
         view[
             [
+                "Police Unit",
                 "Village Area Name",
                 "Beat Name",
                 "Total Crimes per beat",
@@ -332,6 +336,7 @@ def allocate_resources(option, district_df, updated_asi, updated_chc, updated_cp
         ]
         .rename(
             columns={
+                "Police Unit": "Đơn vị cảnh sát",
                 "Village Area Name": "Khu vực",
                 "Beat Name": "Tuyến tuần tra",
                 "Total Crimes per beat": "Vụ cần tuần tra",
@@ -345,9 +350,6 @@ def allocate_resources(option, district_df, updated_asi, updated_chc, updated_cp
         width="stretch",
         height=450,
     )
-
-    st.session_state.default = False
-    st.session_state.apply = False
 
 
 # ======================================================================
