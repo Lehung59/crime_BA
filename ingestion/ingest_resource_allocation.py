@@ -7,7 +7,7 @@ def ingest_resource_data():
     df = pd.read_csv(raw_path)
 
     df.drop(columns= df.columns[~df.columns.isin(['District_Name', 'UnitName', 'FIRNo', 'CrimeGroup_Name',
-        'Beat_Name', 'Village_Area_Name',
+        'Beat_Name', 'Village_Area_Name', 'VICTIM COUNT',
        ])],inplace = True)
 
     df.drop_duplicates(inplace =  True)

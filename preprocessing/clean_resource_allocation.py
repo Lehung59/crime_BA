@@ -30,7 +30,13 @@ def load_sanctioned_strength_data():
 
 
 def clean_resource_data(df):
-    df["Total Crimes per beat"] = df.groupby(["District_Name", "UnitName", "Village_Area_Name", "Beat_Name"])["FIRNo"].transform("count")
+    df["VICTIM COUNT"] = pd.to_numeric(df["VICTIM COUNT"], errors="coerce").fillna(0)
+    df["Total Crimes per beat"] = df.groupby(
+        ["District_Name", "UnitName", "Village_Area_Name", "Beat_Name"]
+    )["UnitName"].transform("size")
+    df["Total Victims per beat"] = df.groupby(
+        ["District_Name", "UnitName", "Village_Area_Name", "Beat_Name"]
+    )["VICTIM COUNT"].transform("sum")
 
     df = df[(df["District_Name"]!= "CID") & (df["District_Name"]!= "ISD Bengaluru") & (df["District_Name"]!= "Coastal Security Police")]
 
@@ -81,7 +87,7 @@ def clean_resource_data(df):
 
     df = df.merge(sanctioned_df, on='District Name', how='left')
     
-    df.drop(columns = ["District_Name", "FIRNo"], inplace = True)
+    df.drop(columns=["District_Name"], inplace=True)
 
     df.dropna(inplace = True)
     df.drop_duplicates(inplace = True)
@@ -230,7 +236,18 @@ def clean_resource_data(df):
 
     df.drop_duplicates(inplace = True)
 
-    new_order = ['District Name', 'UnitName',  'Village_Area_Name', 'Beat_Name','Total Crimes per beat', 'Crime_Severity_per_Beat', 'ASI', 'CHC', 'CPC']
+    new_order = [
+        'District Name',
+        'UnitName',
+        'Village_Area_Name',
+        'Beat_Name',
+        'Total Crimes per beat',
+        'Total Victims per beat',
+        'Crime_Severity_per_Beat',
+        'ASI',
+        'CHC',
+        'CPC',
+    ]
     df = df[new_order]
 
     columns_to_rename = {'UnitName': 'Police Unit',
@@ -251,11 +268,27 @@ def clean_resource_data(df):
 
     df[columns_to_convert] = df[columns_to_convert].apply(np.round).astype(int)
     
+    severity_weight = 0.7
+    victim_weight = 0.3
+
     # Calculate the sum of 'Crime Severity per Beat' for each district
     district_crime_severity_sum = df.groupby("District Name")["Crime Severity per Beat"].sum()
+    district_victim_sum = df.groupby("District Name")["Total Victims per beat"].sum()
 
-    # Calculate 'Normalised Crime Severity' by dividing 'Crime Severity per Beat' by the sum for each district
-    df["Normalised Crime Severity"] = df.apply(lambda row: row["Crime Severity per Beat"] / district_crime_severity_sum[row["District Name"]], axis=1)
+    # Blend offense severity with victim volume to better reflect operational harm on each beat.
+    df["Normalised Crime Severity"] = df.apply(
+        lambda row: (
+            severity_weight
+            * (row["Crime Severity per Beat"] / district_crime_severity_sum[row["District Name"]])
+            + victim_weight
+            * (
+                row["Total Victims per beat"] / district_victim_sum[row["District Name"]]
+                if district_victim_sum[row["District Name"]] > 0
+                else 0
+            )
+        ),
+        axis=1,
+    )
 
     df.drop(columns = ["Crime Severity per Beat"], inplace = True)
 

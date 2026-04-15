@@ -79,6 +79,8 @@ PATROL_CRIME_WEIGHTS = {
 }
 
 DISPLAY_UPPERCASE_COLUMNS = ["Village Area Name", "Beat Name"]
+SEVERITY_WEIGHT = 0.7
+VICTIM_WEIGHT = 0.3
 
 
 @st.cache_data(show_spinner=False)
@@ -91,8 +93,19 @@ def load_patrol_reference_data():
         "processed",
         "Patrol_Reference_Cleaned.csv",
     )
+    expected_columns = {
+        "District Name",
+        "Police Unit",
+        "Village Area Name",
+        "Beat Name",
+        "Patrol Crimes per beat",
+        "Patrol Severity per Beat",
+        "Total Victims per beat",
+    }
     if os.path.exists(processed_path):
-        return pd.read_csv(processed_path)
+        patrol_df = pd.read_csv(processed_path)
+        if expected_columns.issubset(patrol_df.columns):
+            return patrol_df
 
     raw_path = os.path.join(
         os.path.dirname(__file__),
@@ -107,6 +120,7 @@ def load_patrol_reference_data():
         "Village_Area_Name",
         "Beat_Name",
         "CrimeGroup_Name",
+        "VICTIM COUNT",
     ]
     grouped_chunks = []
 
@@ -117,10 +131,13 @@ def load_patrol_reference_data():
         engine="python",
         on_bad_lines="skip",
     ):
-        chunk = chunk.dropna(subset=usecols).copy()
+        chunk = chunk.dropna(subset=["District_Name", "UnitName", "Village_Area_Name", "Beat_Name", "CrimeGroup_Name"]).copy()
         chunk["CrimeGroup_Name"] = (
             chunk["CrimeGroup_Name"].astype(str).str.strip().str.upper()
         )
+        chunk["VICTIM COUNT"] = pd.to_numeric(
+            chunk["VICTIM COUNT"], errors="coerce"
+        ).fillna(0)
         chunk["District Name"] = chunk["District_Name"].map(DISTRICT_MAPPING)
         chunk = chunk[chunk["District Name"].notna()].copy()
         chunk["Patrol Weight"] = chunk["CrimeGroup_Name"].map(PATROL_CRIME_WEIGHTS)
@@ -136,6 +153,7 @@ def load_patrol_reference_data():
             ).agg(
                 Patrol_Crimes=("CrimeGroup_Name", "count"),
                 Patrol_Severity=("Patrol Weight", "sum"),
+                Patrol_Victims=("VICTIM COUNT", "sum"),
             )
         )
 
@@ -148,6 +166,7 @@ def load_patrol_reference_data():
                 "Beat Name",
                 "Patrol Crimes per beat",
                 "Patrol Severity per Beat",
+                "Total Victims per beat",
             ]
         )
 
@@ -155,7 +174,7 @@ def load_patrol_reference_data():
     patrol_df = patrol_df.groupby(
         ["District Name", "UnitName", "Village_Area_Name", "Beat_Name"],
         as_index=False,
-    )[["Patrol_Crimes", "Patrol_Severity"]].sum()
+    )[["Patrol_Crimes", "Patrol_Severity", "Patrol_Victims"]].sum()
 
     patrol_df = patrol_df.rename(
         columns={
@@ -164,6 +183,7 @@ def load_patrol_reference_data():
             "Beat_Name": "Beat Name",
             "Patrol_Crimes": "Patrol Crimes per beat",
             "Patrol_Severity": "Patrol Severity per Beat",
+            "Patrol_Victims": "Total Victims per beat",
         }
     )
     patrol_df.to_csv(processed_path, index=False)
@@ -173,6 +193,7 @@ def load_patrol_reference_data():
 def prepare_patrol_district_data(df, option):
     """Chỉ giữ các beat có tội phạm phù hợp tuần tra thực địa."""
     district_df = df[df["District Name"] == option].copy()
+    district_df = district_df.drop(columns=["Total Victims per beat"], errors="ignore")
     patrol_df = load_patrol_reference_data()
     district_patrol_df = patrol_df[patrol_df["District Name"] == option].copy()
 
@@ -182,7 +203,12 @@ def prepare_patrol_district_data(df, option):
     merge_keys = ["District Name", "Police Unit", "Village Area Name", "Beat Name"]
     district_df = district_df.merge(
         district_patrol_df[
-            merge_keys + ["Patrol Crimes per beat", "Patrol Severity per Beat"]
+            merge_keys
+            + [
+                "Patrol Crimes per beat",
+                "Patrol Severity per Beat",
+                "Total Victims per beat",
+            ]
         ],
         on=merge_keys,
         how="inner",
@@ -193,13 +219,21 @@ def prepare_patrol_district_data(df, option):
 
     district_df["Total Crimes per beat"] = district_df["Patrol Crimes per beat"]
     total_patrol_severity = district_df["Patrol Severity per Beat"].sum()
+    total_patrol_victims = district_df["Total Victims per beat"].sum()
 
     if total_patrol_severity > 0:
-        district_df["Normalised Crime Severity"] = (
-            district_df["Patrol Severity per Beat"] / total_patrol_severity
-        )
+        severity_share = district_df["Patrol Severity per Beat"] / total_patrol_severity
     else:
-        district_df["Normalised Crime Severity"] = 1 / len(district_df)
+        severity_share = pd.Series(1 / len(district_df), index=district_df.index)
+
+    if total_patrol_victims > 0:
+        victim_share = district_df["Total Victims per beat"] / total_patrol_victims
+    else:
+        victim_share = pd.Series(0.0, index=district_df.index)
+
+    district_df["Normalised Crime Severity"] = (
+        SEVERITY_WEIGHT * severity_share + VICTIM_WEIGHT * victim_share
+    )
 
     return district_df.drop(columns=["Patrol Severity per Beat"])
 
@@ -327,6 +361,7 @@ def allocate_resources(option, district_df, updated_asi, updated_chc, updated_cp
                 "Village Area Name",
                 "Beat Name",
                 "Total Crimes per beat",
+                "Total Victims per beat",
                 "Normalised Crime Severity",
                 "Allocated ASI",
                 "Allocated CHC",
@@ -339,8 +374,9 @@ def allocate_resources(option, district_df, updated_asi, updated_chc, updated_cp
                 "Police Unit": "Đơn vị cảnh sát",
                 "Village Area Name": "Khu vực",
                 "Beat Name": "Tuyến tuần tra",
-                "Total Crimes per beat": "Vụ cần tuần tra",
-                "Normalised Crime Severity": "Mức độ nghiêm trọng",
+                "Total Crimes per beat": "Số vụ đã xảy ra",
+                "Total Victims per beat": "Tổng số nạn nhân",
+                "Normalised Crime Severity": "Mức độ nghiêm trọng tổng hợp",
                 "Allocated ASI": "ASI phân bổ",
                 "Allocated CHC": "CHC phân bổ",
                 "Allocated CPC": "CPC phân bổ",
@@ -388,6 +424,9 @@ def resource_allocation(df):
     st.caption(
         "Chỉ giữ các vị trí có tội phạm hiện trường như đánh nhau, gây rối, trộm cắp, cướp, "
         "tai nạn, tệ nạn; loại trừ cyber, gian lận tài chính, giả mạo và các vụ không phù hợp tuần tra."
+    )
+    st.caption(
+        "Điểm ưu tiên hiện kết hợp 70% mức độ nghiêm trọng của loại tội và 30% tổng số nạn nhân ghi nhận tại beat."
     )
 
     default_asi = int(
