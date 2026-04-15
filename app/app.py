@@ -119,7 +119,6 @@ if selected == "Phân tích Hình mẫu Tội phạm":
     mean_lat, mean_lon, geojson_data, crime_pattern_analysis = load_crime_pattern_data()
 
     st.title("Phân tích Hình mẫu Tội phạm")
-    st.markdown("> *Khám phá xu hướng tội phạm theo thời gian, không gian và phát hiện điểm nóng bằng AI.*")
     st.markdown("---")
 
     st.subheader("Phân tích theo Thời gian")

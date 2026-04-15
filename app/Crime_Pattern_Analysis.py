@@ -6,7 +6,7 @@ import folium
 from folium.plugins import HeatMap
 from sklearn.cluster import DBSCAN
 import numpy as np
-from streamlit_folium import st_folium
+from streamlit_folium import folium_static
 from datetime import datetime
 import branca.colormap as cm
 
@@ -65,7 +65,7 @@ def temporal_analysis(crime_pattern_analysis):
 
     # Temporal analysis visualizations
     if filtered_df.empty or (not selected_districts and not selected_crime_groups):
-        st.warning("⚠️ Hãy chọn Quận/Huyện và Nhóm tội phạm từ bộ lọc phía trên để xem biểu đồ.")
+        st.warning("Hãy chọn Quận/Huyện và Nhóm tội phạm từ bộ lọc phía trên để xem biểu đồ.")
     else:
         data = filtered_df.groupby([time_col, "District_Name", "CrimeGroup_Name"]).size().reset_index(name="Count")
 
@@ -137,6 +137,8 @@ def crime_hotspot_analysis(df, mean_lat, mean_lon):
 
 
 def crime_hotspots(crime_pattern_analysis, mean_lat, mean_lon):
+    if "show_hotspot_map" not in st.session_state:
+        st.session_state.show_hotspot_map = False
 
     st.markdown("""
     <div style="background: linear-gradient(135deg, #e8f8f5, #d1f2eb); border-left: 4px solid #1b9aaa; 
@@ -167,7 +169,8 @@ def crime_hotspots(crime_pattern_analysis, mean_lat, mean_lon):
     crime_types = st.multiselect("Chọn loại tội phạm", crime_pattern_analysis['CrimeGroup_Name'].unique())
 
     if len(crime_types) == 0:
-        st.info("👆 Hãy chọn ít nhất 1 loại tội phạm để hiển thị bản đồ điểm nóng.")
+        st.info("Hãy chọn ít nhất 1 loại tội phạm để hiển thị bản đồ điểm nóng.")
+        st.session_state.show_hotspot_map = False
 
     # Filter data
     filtered_data = crime_pattern_analysis[
@@ -178,11 +181,19 @@ def crime_hotspots(crime_pattern_analysis, mean_lat, mean_lon):
         filtered_data = filtered_data[filtered_data['CrimeGroup_Name'].isin(crime_types)]
 
     if st.button("Hiển thị bản đồ", type="primary") and len(crime_types) != 0:
+        st.session_state.show_hotspot_map = True
+
+    if st.session_state.show_hotspot_map and len(crime_types) != 0:
         with st.spinner("Đang phân tích và vẽ bản đồ..."):
             # Aggregate data
             aggregated_data = filtered_data.groupby(
                 ['District_Name', 'UnitName', 'Latitude', 'Longitude', 'CrimeGroup_Name']
             ).size().reset_index(name='Count')
+
+            if aggregated_data.empty:
+                st.warning("Không có dữ liệu phù hợp với bộ lọc hiện tại để vẽ bản đồ.")
+                st.session_state.show_hotspot_map = False
+                return
 
             # Calculate mean lat and lon
             mean_lat = aggregated_data['Latitude'].mean()
@@ -197,17 +208,7 @@ def crime_hotspots(crime_pattern_analysis, mean_lat, mean_lon):
 
             # Create and display maps
             m = crime_hotspot_analysis(aggregated_data, mean_lat, mean_lon)
-            st_folium(m, width=900, height=500)
-
-        # Explanation
-        st.markdown("""
-        ---
-        #### 🔎 Cách đọc bản đồ:
-        - **Vùng đỏ** trên bản đồ nhiệt = mật độ tội phạm **cao** (điểm nóng)
-        - **Vùng xanh** = mật độ **thấp**
-        - **📍 Markers đỏ** = tâm của các **cụm tội phạm** do DBSCAN phát hiện (click để xem chi tiết)
-        - 🔍 **Zoom vào** để xem chi tiết từng khu vực cụ thể
-        """)
+            folium_static(m, width=900, height=500)
 
 
 
@@ -267,4 +268,3 @@ def chloropleth_maps(df, geojson_data, mean_lat, mean_lon):
     )
     st.plotly_chart(fig, width='stretch')
 
-    st.caption("Hover chuột lên từng quận để xem chi tiết số liệu. Màu càng đậm = tội phạm càng nhiều.")

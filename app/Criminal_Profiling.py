@@ -314,9 +314,9 @@ def create_criminal_profiling_dashboard():
     st.plotly_chart(fig_gen, width='stretch')
 
     # Stats
-    gen_cols = st.columns(len(gender_counts))
-    for i, (label, count) in enumerate(gender_counts.items()):
-        gen_cols[i].metric(label, f"{count:,}", f"{count/gender_counts.sum()*100:.2f}%")
+    # gen_cols = st.columns(len(gender_counts))
+    # for i, (label, count) in enumerate(gender_counts.items()):
+    #     gen_cols[i].metric(label, f"{count:,}", f"{count/gender_counts.sum()*100:.2f}%")
 
     st.markdown("---")
 
@@ -361,7 +361,6 @@ def create_criminal_profiling_dashboard():
     st.markdown('<p class="story-question"><span class="section-num">4</span>Loại tội phạm nào phổ biến nhất?</p>', unsafe_allow_html=True)
 
     top_crime_groups = Criminal_Profiling['Crime_Group1'].value_counts().nlargest(5)
-    top_crime_heads = Criminal_Profiling['Crime_Head2'].value_counts().nlargest(5)
     top1_crime = top_crime_groups.index[0]
 
     st.markdown(f"""
@@ -373,31 +372,16 @@ def create_criminal_profiling_dashboard():
     </div>
     """, unsafe_allow_html=True)
 
-    tabs = st.tabs(["Nhóm tội chính", "Phân loại nhỏ"])
-
-    with tabs[0]:
-        fig_cg = go.Figure(data=[go.Bar(
-            x=top_crime_groups.index, y=top_crime_groups.values,
-            marker=dict(color=crime_palette[:len(top_crime_groups)], line=dict(color='rgba(255,255,255,0.4)', width=1)),
-            hovertemplate='<b>%{x}</b><br>Count: %{y:,}<extra></extra>',
-            text=top_crime_groups.values, textposition='outside', textfont=dict(size=12, color='#555'))])
-        fig_cg.update_layout(**common_layout,
-            title=dict(text='Top 5 Nhóm Tội phạm Phổ biến nhất', font=dict(size=17, color='#1b2838')),
-            xaxis=dict(title='Nhóm tội', gridcolor=COLOR_GRID, tickangle=-15),
-            yaxis=dict(title='Số lượng', gridcolor=COLOR_GRID, showgrid=True), bargap=0.3)
-        st.plotly_chart(fig_cg, width='stretch')
-
-    with tabs[1]:
-        fig_ch = go.Figure(data=[go.Bar(
-            x=top_crime_heads.index, y=top_crime_heads.values,
-            marker=dict(color=crime_palette[:len(top_crime_heads)], line=dict(color='rgba(255,255,255,0.4)', width=1)),
-            hovertemplate='<b>%{x}</b><br>Count: %{y:,}<extra></extra>',
-            text=top_crime_heads.values, textposition='outside', textfont=dict(size=12, color='#555'))])
-        fig_ch.update_layout(**common_layout,
-            title=dict(text='Top 5 Phân loại nhỏ', font=dict(size=17, color='#1b2838')),
-            xaxis=dict(title='Phân loại', gridcolor=COLOR_GRID, tickangle=-15),
-            yaxis=dict(title='Số lượng', gridcolor=COLOR_GRID, showgrid=True), bargap=0.3)
-        st.plotly_chart(fig_ch, width='stretch')
+    fig_cg = go.Figure(data=[go.Bar(
+        x=top_crime_groups.index, y=top_crime_groups.values,
+        marker=dict(color=crime_palette[:len(top_crime_groups)], line=dict(color='rgba(255,255,255,0.4)', width=1)),
+        hovertemplate='<b>%{x}</b><br>Count: %{y:,}<extra></extra>',
+        text=top_crime_groups.values, textposition='outside', textfont=dict(size=12, color='#555'))])
+    fig_cg.update_layout(**common_layout,
+        title=dict(text='Top 5 Nhóm Tội phạm Phổ biến nhất', font=dict(size=17, color='#1b2838')),
+        xaxis=dict(title='Nhóm tội', gridcolor=COLOR_GRID, tickangle=-15),
+        yaxis=dict(title='Số lượng', gridcolor=COLOR_GRID, showgrid=True), bargap=0.3)
+    st.plotly_chart(fig_cg, width='stretch')
 
     st.markdown("---")
 
@@ -544,21 +528,16 @@ def create_criminal_profiling_dashboard():
         busiest_dow = dow_names[dow_counts.idxmax()]
         quietest_dow = dow_names[dow_counts.idxmin()]
         
-        st.markdown(f"""
-        <div class="story-insight">
-            <b>Diễn giải:</b> Theo dữ liệu hiện có, số hồ sơ đạt mức cao nhất vào <b>Tháng {top_month}</b> với <b>{top_month_val:,}</b> vụ; theo trục ngày trong tuần, <b>{busiest_dow}</b> là ngày có tần suất cao nhất và <b>{quietest_dow}</b> là thấp nhất.<br><br>
-            <b>Vì sao có thể như vậy:</b> Mẫu hình thời gian thường chịu ảnh hưởng bởi nhịp sinh hoạt, lịch làm việc, mùa lễ hội, hoạt động kinh tế và cường độ tuần tra hoặc ghi nhận hồ sơ ở từng giai đoạn.<br><br>
-            <b>Điểm cần thận trọng:</b> Đây là mẫu hình mô tả từ dữ liệu lịch sử; mức cao hay thấp ở một thời điểm có thể phản ánh đồng thời cả biến động thật ngoài thực tế lẫn thay đổi trong quy trình ghi nhận.<br><br>
-            <b>Gợi ý nghiệp vụ:</b> Kết quả phù hợp để bố trí lực lượng theo mùa, theo ngày trong tuần và để xây dựng lịch tăng cường tuần tra vào các mốc có xác suất phát sinh cao hơn.
-        </div>
-        """, unsafe_allow_html=True)
+        # st.markdown(f"""
+        # <div class="story-insight">
+        #     <b>Diễn giải:</b> Theo dữ liệu hiện có, số hồ sơ đạt mức cao nhất vào <b>Tháng {top_month}</b> với <b>{top_month_val:,}</b> vụ; theo trục ngày trong tuần, <b>{busiest_dow}</b> là ngày có tần suất cao nhất và <b>{quietest_dow}</b> là thấp nhất.<br><br>
+        #     <b>Vì sao có thể như vậy:</b> Mẫu hình thời gian thường chịu ảnh hưởng bởi nhịp sinh hoạt, lịch làm việc, mùa lễ hội, hoạt động kinh tế và cường độ tuần tra hoặc ghi nhận hồ sơ ở từng giai đoạn.<br><br>
+        #     <b>Điểm cần thận trọng:</b> Đây là mẫu hình mô tả từ dữ liệu lịch sử; mức cao hay thấp ở một thời điểm có thể phản ánh đồng thời cả biến động thật ngoài thực tế lẫn thay đổi trong quy trình ghi nhận.<br><br>
+        #     <b>Gợi ý nghiệp vụ:</b> Kết quả phù hợp để bố trí lực lượng theo mùa, theo ngày trong tuần và để xây dựng lịch tăng cường tuần tra vào các mốc có xác suất phát sinh cao hơn.
+        # </div>
+        # """, unsafe_allow_html=True)
         
         # --- 6.0: Key metrics row ---
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Tháng cao điểm", f"Tháng {top_month}", f"{top_month_val:,} vụ")
-        m2.metric("Ngày cao điểm", f"Ngày {top_day}", f"{top_day_val:,} vụ")
-        m3.metric("Thứ bận nhất", busiest_dow, f"{dow_counts.max():,} vụ")
-        m4.metric("Thứ thấp nhất", quietest_dow, f"{dow_counts.min():,} vụ")
 
         (
             dow_month,
@@ -740,14 +719,18 @@ def create_criminal_profiling_dashboard():
     # ======================================================================
     st.markdown("### Kết luận & Khuyến nghị")
     st.markdown(f"""
-    Từ việc phân tích **{total_records:,}** hồ sơ tội phạm tại Karnataka, chúng tôi rút ra các kết luận chính:
-    
-    1. **Nhóm tuổi rủi ro cao**: Đối tượng phạm tội tập trung mạnh ở độ tuổi **25-35** ({young_pct:.0f}% dưới 35 tuổi).
-    2. **Giới tính**: **{dominant_pct:.0f}%** là nam giới — chính sách phòng chống nên tập trung vào nhóm này.
-    3. **Yếu tố xã hội**: Đẳng cấp và nghề nghiệp có mối tương quan rõ rệt với tần suất phạm tội.
-    4. **Đẳng cấp trọng điểm**: Nhóm đẳng cấp **"{top1_caste}"** có số hồ sơ phạm tội cao nhất.
-    5. **Loại tội chủ đạo**: **"{top1_crime}"** chiếm tỷ trọng lớn nhất.
-    {f'6. **Thời điểm phạm tội**: Tháng {top_month} và ngày {top_day} hàng tháng là các mốc có tần suất cao nhất, cần chú ý tuần tra.' if 'top_month' in locals() else ''}
-    
-    > *Các kết quả trên phù hợp để làm đầu vào cho các bước phân tích tiếp theo như dự báo tái phạm hoặc hỗ trợ phân bổ nguồn lực, với điều kiện tiếp tục kiểm tra chất lượng dữ liệu và mức độ đại diện của từng biến.*
+    Từ **{total_records:,}** hồ sơ trong module Criminal Profiling, có thể rút ra một số điểm chính:
+
+    1. **Cấu trúc hồ sơ tập trung vào nhóm trẻ và trung niên trẻ**: dữ liệu nghiêng mạnh về nhóm dưới 35 tuổi ({young_pct:.0f}%), cho thấy đây là cụm đối tượng cần được theo dõi kỹ trong các bối cảnh xung đột, đường phố và tái phạm.
+    2. **Chênh lệch giới tính rất lớn trong dữ liệu ghi nhận**: **{dominant_pct:.0f}%** hồ sơ thuộc về **{dominant_gender}**, nhưng đây nên được hiểu là mẫu hình của hồ sơ đã ghi nhận, không phải kết luận tuyệt đối cho toàn bộ hành vi phạm tội ngoài thực tế.
+    3. **Biến xã hội học giúp mô tả bối cảnh, không nên dùng để gán nhãn cá nhân**: các trường như đẳng cấp, nghề nghiệp và nơi cư trú hữu ích để đọc mẫu hình tổng hợp, nhưng cần được dùng rất thận trọng vì dễ chịu ảnh hưởng của thiên lệch ghi nhận.
+    4. **Nhóm tội chủ đạo hiện tại là "{top1_crime}"**: đây là điểm vào hợp lý để ưu tiên phân tích sâu hơn theo tuổi, giới, địa bàn và mùa vụ thay vì dàn trải nguồn lực cho mọi nhóm tội cùng lúc.
+    {f'5. **Mẫu hình thời gian vẫn có giá trị vận hành**: các mốc như Tháng {top_month} và ngày {top_day} cho thấy thời điểm cần tăng cường theo dõi, nhưng nên đọc cùng bối cảnh mùa vụ và thay đổi trong quy trình ghi nhận hồ sơ.' if 'top_month' in locals() else ''}
+
+    **Khuyến nghị sử dụng kết quả này:**
+
+    1. Dùng module này như lớp **mô tả hồ sơ rủi ro**, không dùng như công cụ kết luận nhân thân hay suy đoán cá nhân.
+    2. Kết hợp với **Crime Pattern Analysis** để xác định nơi nào vừa có mật độ cao vừa có nhóm đối tượng nổi bật.
+    3. Kết hợp với **Case Outcome Monitoring** để xem nhóm tội nào không chỉ phổ biến mà còn khó xử lý hoặc khó kết án.
+    4. Dùng làm đầu vào cho **Resource Allocation** và các bước dự báo tiếp theo, nhưng chỉ sau khi tiếp tục kiểm tra chất lượng dữ liệu và mức độ đại diện của từng biến.
     """)
